@@ -12,6 +12,7 @@ struct MenuView: View {
     private static let maxFailures = 6
     private static let maxRunning = 8
     private static let maxRecent = 8
+    static let width: CGFloat = 520
 
     var body: some View {
         let failures = model.menuFailures(snapshot: session.snapshotFailures)
@@ -62,7 +63,7 @@ struct MenuView: View {
             MenuFooter(dismiss: dismiss, openWindow: openWindow)
                 .padding(.vertical, 6)
         }
-        .frame(width: 360)
+        .frame(width: Self.width)
     }
 
     private func header(running: Int, failures: Int) -> some View {

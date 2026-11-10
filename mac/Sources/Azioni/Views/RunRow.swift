@@ -25,11 +25,14 @@ struct RunRow: View {
             StatusDot(signal: run.signal)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
+                    // The repo name is what you scan for; let the workflow name truncate first.
                     Text(run.repoFullName)
                         .fontWeight(.medium)
+                        .layoutPriority(1)
                     Text("·").foregroundStyle(.secondary)
                     Text(run.workflowName)
                         .foregroundStyle(.secondary)
+                        .truncationMode(.tail)
                 }
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -94,7 +97,7 @@ extension WorkflowRun {
         RunRow(run: .sample(id: 5, conclusion: "cancelled"))
     }
     .padding()
-    .frame(width: 360)
+    .frame(width: MenuView.width)
 }
 #endif
 
