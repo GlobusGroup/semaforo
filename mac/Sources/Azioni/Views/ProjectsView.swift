@@ -1,3 +1,190 @@
 import SwiftUI
 
-// TODO(agent: ui)
+enum SidebarItem: Hashable {
+    case recent
+    case repo(String)
+}
+
+/// The projects window: sidebar of repos, detail table of runs.
+struct ProjectsView: View {
+    @Environment(BoardModel.self) private var model
+    @State private var selection: SidebarItem? = .recent
+    @State private var search = ""
+    @State private var filter: RunFilter = .all
+
+    var body: some View {
+        NavigationSplitView {
+            sidebar
+                .navigationSplitViewColumnWidth(min: 220, ideal: 270, max: 400)
+        } detail: {
+            detail
+        }
+        .searchable(text: $search, placement: .sidebar, prompt: "Search")
+    }
+
+    private var sidebar: some View {
+        let repos = model.sidebarRepos(filter: filter, search: search)
+        return List(selection: $selection) {
+            Label("Recent activity", systemImage: "clock.arrow.circlepath")
+                .tag(SidebarItem.recent)
+            Section("Repositories") {
+                ForEach(repos) { repo in
+                    RepoSidebarRow(repo: repo)
+                        .tag(SidebarItem.repo(repo.fullName))
+                }
+                if repos.isEmpty {
+                    Text(model.repos.isEmpty ? "No repositories yet" : "No matches")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            Picker("Filter", selection: $filter) {
+                ForEach(RunFilter.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+        }
+    }
+
+    @ViewBuilder private var detail: some View {
+        switch selection {
+        case .repo(let name):
+            if let repo = model.repos.first(where: { $0.fullName == name }) {
+                RepoDetail(repo: repo, filter: filter)
+            } else {
+                ContentUnavailableView("No runs", systemImage: "tray", description: Text(name))
+            }
+        case .recent, nil:
+            RecentActivityDetail(runs: model.activity(filter: filter, search: search), loaded: model.fetchedAt != nil)
+        }
+    }
+}
+
+private struct RepoSidebarRow: View {
+    var repo: RepoSummary
+
+    var body: some View {
+        let parts = repo.fullName.split(separator: "/", maxSplits: 1).map(String.init)
+        HStack(spacing: 8) {
+            StatusDot(signal: repo.latest?.signal ?? .neutral)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(parts.last ?? repo.fullName).lineLimit(1)
+                if parts.count == 2 {
+                    Text(parts[0]).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+            let live = repo.runs.filter(\.isLive).count
+            if live > 0 {
+                Text("\(live)")
+                    .font(.caption.monospacedDigit())
+                    .padding(.horizontal, 5)
+                    .background(.blue.opacity(0.18), in: Capsule())
+                    .help("\(live) running")
+            }
+        }
+        .help(repo.fullName)
+    }
+}
+
+private struct RecentActivityDetail: View {
+    var runs: [WorkflowRun]
+    var loaded: Bool
+
+    var body: some View {
+        Group {
+            if runs.isEmpty {
+                ContentUnavailableView(
+                    loaded ? "No runs" : "Loading…",
+                    systemImage: loaded ? "tray" : "hourglass",
+                    description: Text(loaded ? "No workflow runs match." : "Fetching workflow runs from GitHub.")
+                )
+            } else {
+                RunsTable(runs: runs, showRepo: true)
+            }
+        }
+        .navigationTitle("Recent activity")
+    }
+}
+
+private struct RepoDetail: View {
+    var repo: RepoSummary
+    var filter: RunFilter
+
+    var body: some View {
+        let runs = repo.runs.filter(filter.matches)
+        Group {
+            if runs.isEmpty {
+                ContentUnavailableView("No runs", systemImage: "tray", description: Text("No \(filter == .all ? "" : filter.rawValue.lowercased() + " ")runs in \(repo.fullName)."))
+            } else {
+                RunsTable(runs: runs, showRepo: false)
+            }
+        }
+        .navigationTitle(repo.fullName)
+        .navigationSubtitle(repo.latest.map { "Latest: \($0.signal.label)" } ?? "")
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    if let url = RunFormat.repoActionsURL(repo.fullName) { NSWorkspace.shared.open(url) }
+                } label: {
+                    Label("Open on GitHub", systemImage: "arrow.up.forward.square")
+                }
+                .help("Open \(repo.fullName) Actions on GitHub")
+            }
+        }
+    }
+}
+
+/// Runs as a table; double-click (or the context menu) opens a run on GitHub.
+struct RunsTable: View {
+    var runs: [WorkflowRun]
+    var showRepo: Bool
+    @State private var selection: Set<WorkflowRun.ID> = []
+
+    var body: some View {
+        Table(runs, selection: $selection) {
+            TableColumn("Status") { run in StatusLabel(signal: run.signal) }
+                .width(min: 70, ideal: 85, max: 110)
+            // `if` inside a TableColumnBuilder needs macOS 14.4; hide the column instead.
+            TableColumn("Repository") { run in Text(run.repoFullName).help(run.repoFullName) }
+                .width(min: 100, ideal: 170)
+                .defaultVisibility(showRepo ? .visible : .hidden)
+            TableColumn("Workflow") { run in Text(run.workflowName) }
+                .width(min: 80, ideal: 120)
+            TableColumn("Title") { run in Text(run.displayTitle).help(run.displayTitle) }
+                .width(min: 120, ideal: 240)
+            TableColumn("Branch") { run in Text(run.headBranch ?? "—") }
+                .width(min: 60, ideal: 100)
+            TableColumn("Event") { run in Text(run.event).foregroundStyle(.secondary) }
+                .width(min: 50, ideal: 80)
+            TableColumn("Actor") { run in Text(run.actorLogin ?? "—").foregroundStyle(.secondary) }
+                .width(min: 50, ideal: 90)
+            TableColumn("Started") { run in
+                Text(run.startedAt, format: .dateTime.month(.abbreviated).day().hour().minute())
+                    .monospacedDigit()
+            }
+            .width(min: 80, ideal: 110)
+            TableColumn("Duration") { run in DurationText(run: run).monospacedDigit() }
+                .width(min: 55, ideal: 70)
+        }
+        .contextMenu(forSelectionType: WorkflowRun.ID.self) { ids in
+            Button("Open on GitHub") { open(ids) }
+                .disabled(ids.isEmpty)
+            if let id = ids.first, ids.count == 1, let run = runs.first(where: { $0.id == id }) {
+                Button("Copy Link") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(run.htmlURL, forType: .string)
+                }
+            }
+        } primaryAction: { ids in
+            open(ids)
+        }
+    }
+
+    private func open(_ ids: Set<WorkflowRun.ID>) {
+        for run in runs where ids.contains(run.id) { run.open() }
+    }
+}
