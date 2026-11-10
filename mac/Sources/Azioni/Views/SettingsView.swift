@@ -1,7 +1,7 @@
 import ServiceManagement
 import SwiftUI
 
-/// Settings sheet in the projects window (toolbar gear, ⌘,): login item, refresh, API budget.
+/// Settings sheet in the projects window (toolbar gear, ⌘,): login item, notifications, refresh, API budget.
 struct SettingsView: View {
     @Environment(BoardModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +16,33 @@ struct SettingsView: View {
                     Toggle("Open at login", isOn: Binding(get: { openAtLogin }, set: setOpenAtLogin))
                     if let loginNote {
                         Text(loginNote).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Notifications") {
+                    @Bindable var model = model
+                    Picker("Notify about failures in", selection: $model.notifyScope) {
+                        ForEach(NotificationScope.allCases) { Text($0.label).tag($0) }
+                    }
+                    if model.notifyScope == .selected {
+                        if model.notifyRepos.isEmpty {
+                            Text("None yet. Use the bell on a repository card, or right-click a repository in the sidebar.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        } else {
+                            ForEach(model.notifyRepos.sorted(), id: \.self) { name in
+                                HStack {
+                                    Text(name)
+                                    Spacer()
+                                    Button {
+                                        model.setNotifies(false, for: name)
+                                    } label: {
+                                        Image(systemName: "minus.circle")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("Stop notifying about \(name)")
+                                }
+                            }
+                        }
                     }
                 }
 

@@ -52,14 +52,15 @@ extension BoardModel {
     }
 
     /// The menu's "New failures": what was unseen when it opened plus anything that failed since,
-    /// using the freshest copy of each run and dropping ones that are no longer failing (re-run).
+    /// using the freshest copy of each run and dropping ones that are no longer failing (re-run)
+    /// or whose repo was switched off while the menu was open.
     func menuFailures(snapshot: [WorkflowRun]) -> [WorkflowRun] {
         let current = Dictionary(runs.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var byID: [Int: WorkflowRun] = [:]
         for run in snapshot { byID[run.id] = current[run.id] ?? run }
         for run in unseenFailures { byID[run.id] = run }
         return byID.values
-            .filter { $0.signal == .failure }
+            .filter { $0.signal == .failure && notifies($0.repoFullName) }
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 }

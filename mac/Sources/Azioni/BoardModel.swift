@@ -15,6 +15,26 @@ enum IconState: Equatable, Sendable {
     case idle
 }
 
+/// Which repos post failure notifications.
+enum NotificationScope: String, CaseIterable, Identifiable, Sendable {
+    /// Every repo (the original behaviour).
+    case all
+    /// Only repos in `BoardModel.notifyRepos`.
+    case selected
+    /// Never.
+    case off
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .all: "All repositories"
+        case .selected: "Selected repositories"
+        case .off: "Off"
+        }
+    }
+}
+
 struct RepoSummary: Identifiable, Hashable, Sendable {
     var id: String { fullName }
     var fullName: String
@@ -37,6 +57,8 @@ extension RunStore: RunSource {}
 final class BoardModel {
     static let pollInterval: Duration = .seconds(20)
     static let lastSeenKey = "lastSeenAt"
+    static let notifyScopeKey = "notifyScope"
+    static let notifyReposKey = "notifyRepos"
     static let recentLimit = 8
     /// Runs older than this are hidden from the menu and window (live runs always show).
     static let visibleWindow: TimeInterval = 24 * 60 * 60
@@ -50,6 +72,12 @@ final class BoardModel {
     private(set) var problem: String?
     private(set) var lastSeenAt: Date
     private(set) var isRefreshing = false
+    /// Which repos post notifications; persisted.
+    var notifyScope: NotificationScope {
+        didSet { defaults.set(notifyScope.rawValue, forKey: Self.notifyScopeKey) }
+    }
+    /// Full names ("org/repo") that notify when the scope is `.selected`; persisted.
+    private(set) var notifyRepos: Set<String>
 
     /// When this model was created; failures older than this never notify.
     let launchedAt: Date
@@ -84,13 +112,33 @@ final class BoardModel {
             lastSeenAt = launch
             defaults.set(launch, forKey: Self.lastSeenKey)
         }
+        notifyScope = defaults.string(forKey: Self.notifyScopeKey).flatMap(NotificationScope.init) ?? .all
+        notifyRepos = Set(defaults.stringArray(forKey: Self.notifyReposKey) ?? [])
+    }
+
+    // MARK: Notification choices
+
+    /// Whether a failure in this repo posts a notification under the current scope.
+    func notifies(_ repoFullName: String) -> Bool {
+        switch notifyScope {
+        case .all: true
+        case .selected: notifyRepos.contains(repoFullName)
+        case .off: false
+        }
+    }
+
+    /// Adds or removes a repo from the selected set (used when the scope is `.selected`).
+    func setNotifies(_ enabled: Bool, for repoFullName: String) {
+        if enabled { notifyRepos.insert(repoFullName) } else { notifyRepos.remove(repoFullName) }
+        defaults.set(notifyRepos.sorted(), forKey: Self.notifyReposKey)
     }
 
     // MARK: Derived state
 
-    /// Failed runs whose updatedAt > lastSeenAt.
+    /// Failed runs whose updatedAt > lastSeenAt, in repos that notify (Settings › Notifications).
+    /// Drives the icon's red count and the menu's "New failures".
     var unseenFailures: [WorkflowRun] {
-        runs.filter { $0.signal == .failure && $0.updatedAt > lastSeenAt }
+        runs.filter { $0.signal == .failure && $0.updatedAt > lastSeenAt && notifies($0.repoFullName) }
     }
 
     /// Running or queued runs.
@@ -238,9 +286,10 @@ final class BoardModel {
         } else {
             problem = nil
         }
-        if !fresh.isEmpty {
+        let wanted = fresh.filter { notifies($0.repoFullName) }
+        if !wanted.isEmpty {
             (notifier as? Notifier)?.naming = repoNaming
-            notifier.notifyFailures(fresh)
+            notifier.notifyFailures(wanted)
         }
     }
 

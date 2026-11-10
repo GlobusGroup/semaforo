@@ -234,6 +234,90 @@ func makeModel(
     }
 }
 
+// MARK: Notification scope
+
+@MainActor
+@Suite struct NotificationScopeTests {
+    /// Two repos running, then both failed: what reaches the notifier.
+    private func postedRepos(_ configure: (BoardModel) -> Void) async -> [[String]] {
+        let notifier = FakeNotifier()
+        let running = ["org/mine", "org/theirs"].enumerated().map {
+            makeRun(id: $0.offset + 1, repo: $0.element, status: "in_progress", conclusion: nil, updated: t0)
+        }
+        let failed = ["org/mine", "org/theirs"].enumerated().map {
+            makeRun(id: $0.offset + 1, repo: $0.element, conclusion: "failure", updated: t0.addingTimeInterval(60))
+        }
+        let model = makeModel(
+            FakeRunSource([.success(snapshot(running)), .success(snapshot(failed))]), notifier: notifier
+        )
+        configure(model)
+        await model.refresh()
+        await model.refresh()
+        return notifier.batches.map { $0.map(\.repoFullName) }
+    }
+
+    @Test func allIsTheDefault() async {
+        #expect(await postedRepos { _ in } == [["org/mine", "org/theirs"]])
+    }
+
+    @Test func selectedOnlyPostsChosenRepos() async {
+        let posted = await postedRepos {
+            $0.notifyScope = .selected
+            $0.setNotifies(true, for: "org/mine")
+        }
+        #expect(posted == [["org/mine"]])
+    }
+
+    @Test func selectedWithNothingChosenPostsNothing() async {
+        #expect(await postedRepos { $0.notifyScope = .selected } == [])
+    }
+
+    @Test func offPostsNothing() async {
+        let posted = await postedRepos {
+            $0.setNotifies(true, for: "org/mine")
+            $0.notifyScope = .off
+        }
+        #expect(posted == [])
+    }
+
+    @Test func failureCountAndMenuFollowTheScope() async {
+        let failed = ["org/mine", "org/theirs"].enumerated().map {
+            makeRun(id: $0.offset + 1, repo: $0.element, conclusion: "failure", updated: t0.addingTimeInterval(30))
+        }
+        let model = makeModel(FakeRunSource([.success(snapshot(failed))]))
+        await model.refresh()
+        #expect(model.iconState == .failures(unseen: 2, running: 0))
+
+        model.notifyScope = .selected
+        model.setNotifies(true, for: "org/mine")
+        #expect(model.unseenFailures.map(\.repoFullName) == ["org/mine"])
+        #expect(model.iconState == .failures(unseen: 1, running: 0))
+        // A menu opened earlier drops repos switched off since.
+        #expect(model.menuFailures(snapshot: failed).map(\.repoFullName) == ["org/mine"])
+
+        model.notifyScope = .off
+        #expect(model.unseenFailures.isEmpty)
+        #expect(model.iconState == .idle)
+        // The runs themselves stay on the board.
+        #expect(model.runs.count == 2)
+    }
+
+    @Test func choicesPersist() {
+        let defaults = freshDefaults()
+        let first = makeModel(FakeRunSource(), defaults: defaults)
+        first.notifyScope = .selected
+        first.setNotifies(true, for: "org/a")
+        first.setNotifies(true, for: "org/b")
+        first.setNotifies(false, for: "org/a")
+
+        let second = makeModel(FakeRunSource(), defaults: defaults)
+        #expect(second.notifyScope == .selected)
+        #expect(second.notifyRepos == ["org/b"])
+        #expect(second.notifies("org/b"))
+        #expect(!second.notifies("org/a"))
+    }
+}
+
 // MARK: Notifier plan
 
 @Suite struct NotifierPlanTests {

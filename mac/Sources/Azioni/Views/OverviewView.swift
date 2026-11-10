@@ -97,6 +97,7 @@ private struct RepoCard: View {
                 RelativeTime(date: repo.lastChange, style: .short)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                NotifyBell(repoFullName: repo.fullName)
                 Button {
                     if let url = RunFormat.repoActionsURL(repo.fullName) { NSWorkspace.shared.open(url) }
                 } label: {
@@ -107,6 +108,7 @@ private struct RepoCard: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
+            .contextMenu { NotifyMenuToggle(repoFullName: repo.fullName) }
 
             Divider()
 

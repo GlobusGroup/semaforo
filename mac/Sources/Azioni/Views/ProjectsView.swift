@@ -121,8 +121,15 @@ private struct RepoSidebarRow: View {
                     .background(GitHubColor.pending.opacity(0.18), in: Capsule())
                     .help("\(live) running")
             }
+            if model.notifyScope == .selected, model.notifies(repo.fullName) {
+                Image(systemName: "bell.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .help("Notifies about failures")
+            }
         }
         .help(repo.fullName)
+        .contextMenu { NotifyMenuToggle(repoFullName: repo.fullName) }
     }
 }
 
@@ -172,6 +179,9 @@ private struct RepoDetail: View {
         .navigationTitle(model.repoNaming.name(repo.fullName))
         .navigationSubtitle(repo.latest.map { "Latest: \($0.signal.label)" } ?? "No runs")
         .toolbar {
+            ToolbarItem {
+                NotifyBell(repoFullName: repo.fullName)
+            }
             ToolbarItem {
                 Button {
                     if let url = RunFormat.repoActionsURL(repo.fullName) { NSWorkspace.shared.open(url) }
