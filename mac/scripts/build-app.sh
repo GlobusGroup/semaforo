@@ -27,9 +27,10 @@ binary="$bin_dir/$app_name"
 
 echo "==> assembling $app"
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$binary" "$app/Contents/MacOS/$app_name"
 cp "$mac_dir/Resources/Info.plist" "$app/Contents/Info.plist"
+cp "$mac_dir/Resources/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
 plutil -lint -s "$app/Contents/Info.plist"
 
 echo "==> signing (ad hoc)"
