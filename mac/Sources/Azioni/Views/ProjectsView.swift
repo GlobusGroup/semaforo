@@ -58,7 +58,7 @@ struct ProjectsView: View {
                 ContentUnavailableView("No runs", systemImage: "tray", description: Text(name))
             }
         case .recent, nil:
-            RecentActivityDetail(runs: model.activity(filter: filter, search: search), loaded: model.fetchedAt != nil)
+            RecentActivityDetail(runs: model.activity(filter: filter, search: search), loaded: model.fetchedAt != nil, problem: model.problem)
         }
     }
 }
@@ -93,10 +93,17 @@ private struct RepoSidebarRow: View {
 private struct RecentActivityDetail: View {
     var runs: [WorkflowRun]
     var loaded: Bool
+    var problem: String?
 
     var body: some View {
         Group {
-            if runs.isEmpty {
+            if runs.isEmpty, !loaded, let problem {
+                ContentUnavailableView(
+                    "Can't reach GitHub",
+                    systemImage: "exclamationmark.icloud",
+                    description: Text(problem)
+                )
+            } else if runs.isEmpty {
                 ContentUnavailableView(
                     loaded ? "No runs" : "Loading…",
                     systemImage: loaded ? "tray" : "hourglass",
