@@ -65,21 +65,26 @@ private struct Spinner: View {
     }
 }
 
-/// GitHub's Primer colours for run states, light and dark.
+/// GitHub's Primer colours for run states, light and dark. `ns*` for AppKit drawing (menu bar).
 enum GitHubColor {
-    static let success = dynamic(light: 0x1A7F37, dark: 0x3FB950)
-    static let failure = dynamic(light: 0xD1242F, dark: 0xF85149)
-    static let pending = dynamic(light: 0xBF8700, dark: 0xD29922)
-    static let neutral = dynamic(light: 0x59636E, dark: 0x9198A1)
+    static let nsSuccess = dynamic(light: 0x1A7F37, dark: 0x3FB950)
+    static let nsFailure = dynamic(light: 0xD1242F, dark: 0xF85149)
+    static let nsPending = dynamic(light: 0xBF8700, dark: 0xD29922)
+    static let nsNeutral = dynamic(light: 0x59636E, dark: 0x9198A1)
 
-    private static func dynamic(light: Int, dark: Int) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
+    static let success = Color(nsColor: nsSuccess)
+    static let failure = Color(nsColor: nsFailure)
+    static let pending = Color(nsColor: nsPending)
+    static let neutral = Color(nsColor: nsNeutral)
+
+    private static func dynamic(light: Int, dark: Int) -> NSColor {
+        NSColor(name: nil) { appearance in
             let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
             return NSColor(
                 srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
                 green: CGFloat((hex >> 8) & 0xFF) / 255,
                 blue: CGFloat(hex & 0xFF) / 255,
                 alpha: 1)
-        })
+        }
     }
 }

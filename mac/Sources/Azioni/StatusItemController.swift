@@ -85,11 +85,11 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         switch state {
         case let .failures(unseen, running):
             button.image = StatusIcon.image(.failed)
-            let title = NSMutableAttributedString(attributedString: count(unseen, .systemRed))
+            let title = NSMutableAttributedString(attributedString: count(unseen, GitHubColor.nsFailure))
             if running > 0 {
                 title.append(NSAttributedString(
-                    string: "  ▶\u{FE0E}\(running)",
-                    attributes: [.font: font, .foregroundColor: NSColor.systemBlue]
+                    string: "  ◌\(running)",
+                    attributes: [.font: font, .foregroundColor: GitHubColor.nsPending]
                 ))
             }
             button.attributedTitle = title

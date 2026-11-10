@@ -8,11 +8,11 @@ enum StatusIcon {
         case idle
         /// Green check: the latest finished run passed recently.
         case passed
-        /// Blue, play glyph: runs in progress.
+        /// Amber in-progress ring: runs in progress.
         case running
-        /// Red, exclamation mark: new failures.
+        /// Red, cross: new failures.
         case failed
-        /// Orange, exclamation mark, whole mark dimmed: can't reach GitHub.
+        /// Grey, exclamation mark, whole mark dimmed: can't reach GitHub.
         case problem
     }
 
@@ -42,33 +42,46 @@ enum StatusIcon {
             x += gap
         }
 
-        // Final stage.
+        // Final stage, in GitHub's colours and shapes (see GitHubStatusIcon).
         let circle = NSRect(x: x, y: midY - final / 2, width: final, height: final)
-        let (fill, glyph): (NSColor?, String?) = switch badge {
-        case .idle: (nil, nil)
-        case .passed: (.systemGreen, "checkmark")
-        case .running: (.systemBlue, "play.fill")
-        case .failed: (.systemRed, "exclamationmark")
-        case .problem: (.systemOrange, "exclamationmark")
-        }
-        guard let fill, let glyph else {
+        switch badge {
+        case .idle:
             let ring = NSBezierPath(ovalIn: circle.insetBy(dx: 1.25, dy: 1.25))
             ring.lineWidth = 1.5
             ring.stroke()
-            return
+        case .running:
+            // GitHub's in-progress ring: faint track plus a solid arc.
+            let r = circle.insetBy(dx: 1.4, dy: 1.4)
+            let track = NSBezierPath(ovalIn: r)
+            track.lineWidth = 2.2
+            GitHubColor.nsPending.withAlphaComponent(0.45).setStroke()
+            track.stroke()
+            let arc = NSBezierPath()
+            arc.appendArc(withCenter: NSPoint(x: r.midX, y: r.midY), radius: r.width / 2,
+                          startAngle: 90, endAngle: -120, clockwise: true)
+            arc.lineWidth = 2.2
+            arc.lineCapStyle = .round
+            GitHubColor.nsPending.setStroke()
+            arc.stroke()
+        case .passed:
+            badgeDisc(circle, GitHubColor.nsSuccess, glyph: "checkmark")
+        case .failed:
+            badgeDisc(circle, GitHubColor.nsFailure, glyph: "xmark")
+        case .problem:
+            badgeDisc(circle, GitHubColor.nsNeutral, glyph: "exclamationmark")
         }
+    }
+
+    private static func badgeDisc(_ circle: NSRect, _ fill: NSColor, glyph: String) {
         fill.setFill()
         NSBezierPath(ovalIn: circle).fill()
-        let pointSize: CGFloat = glyph == "play.fill" ? 6 : 7
-        let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .black)
+        let config = NSImage.SymbolConfiguration(pointSize: glyph == "xmark" ? 6 : 7, weight: .black)
             .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
-        if let symbol = NSImage(systemSymbolName: glyph, accessibilityDescription: nil)?
-            .withSymbolConfiguration(config) {
-            var r = NSRect(origin: .zero, size: symbol.size)
-            r.origin = NSPoint(x: circle.midX - r.width / 2 + (glyph == "play.fill" ? 0.5 : 0),
-                               y: circle.midY - r.height / 2)
-            symbol.draw(in: r)
-        }
+        guard let symbol = NSImage(systemSymbolName: glyph, accessibilityDescription: nil)?
+            .withSymbolConfiguration(config) else { return }
+        let r = NSRect(x: circle.midX - symbol.size.width / 2, y: circle.midY - symbol.size.height / 2,
+                       width: symbol.size.width, height: symbol.size.height)
+        symbol.draw(in: r)
     }
 
     /// An image that redraws in whatever appearance it is drawn in (light or dark menu bar).
