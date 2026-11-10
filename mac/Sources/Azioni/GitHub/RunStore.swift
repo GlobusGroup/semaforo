@@ -11,12 +11,21 @@ actor RunStore {
     static let repoListTTL: TimeInterval = 10 * 60
     /// Repos pushed to (or with a run) within this window poll more often.
     static let recentWindow: TimeInterval = 7 * 24 * 60 * 60
+    /// Repos pushed to (or with a run started) within this window poll as often as live ones.
+    static let hotWindow: TimeInterval = 60 * 60
+    /// How often the push probe asks GitHub which repos were pushed to.
+    static let probeInterval: TimeInterval = 20
+    /// The probe reads one page of the repo list, newest push first.
+    static let probePath =
+        "/user/repos?per_page=30&affiliation=owner,collaborator,organization_member&sort=pushed"
     /// When the hourly budget drops below this, only repos with live runs are polled.
     static let lowBudget = 500
 
     enum Tier: Sendable, CaseIterable {
         /// a run is queued or in progress
         case active
+        /// pushed or ran in the last hour: a new run is likely
+        case hot
         /// pushed or ran recently
         case recent
         /// catches scheduled / manual runs on idle repos
@@ -25,6 +34,7 @@ actor RunStore {
         var interval: TimeInterval {
             switch self {
             case .active: 20
+            case .hot: 20
             case .recent: 90
             case .quiet: 15 * 60
             }
@@ -42,12 +52,15 @@ actor RunStore {
         /// nil = never checked
         var checkedAt: Date?
         var error: String?
+        /// The push probe saw a new push: check on the next scan whatever the tier says.
+        var pushedSinceCheck = false
     }
 
     private let client: GitHubClient
     private let now: @Sendable () -> Date
     private var repos: [String: RepoState] = [:]
     private var reposFetchedAt: Date?
+    private var probedAt: Date?
     private var lastScanAt: Date?
     private var inflight: Task<RunsSnapshot, any Error>?
     private var warning: String?
@@ -73,6 +86,7 @@ actor RunStore {
     private func tier(_ repo: RepoState, at now: Date) -> Tier {
         if repo.runs.contains(where: { Self.activeStatuses.contains($0.status) }) { return .active }
         let latest = [repo.pushedAt, repo.runs.map(\.startedAt).max()].compactMap { $0 }.max()
+        if let latest, now.timeIntervalSince(latest) < Self.hotWindow { return .hot }
         if let latest, now.timeIntervalSince(latest) < Self.recentWindow { return .recent }
         return .quiet
     }
@@ -80,6 +94,7 @@ actor RunStore {
     private func isDue(_ repo: RepoState, at now: Date, force: Bool, lowBudget: Bool) -> Bool {
         guard let checkedAt = repo.checkedAt else { return true }
         let tier = tier(repo, at: now)
+        if repo.pushedSinceCheck && !lowBudget { return true }
         if lowBudget && tier != .active { return false }
         if force && tier != .quiet { return true }
         return now.timeIntervalSince(checkedAt) >= tier.interval
@@ -109,6 +124,13 @@ actor RunStore {
             } catch {
                 if repos.isEmpty { throw error }
                 warning = "Repo list refresh failed: \(error.localizedDescription)"
+            }
+        } else if probedAt.map({ started.timeIntervalSince($0) >= Self.probeInterval }) ?? true {
+            // Between full refreshes, one cheap page of the repo list (newest push first) tells us
+            // which repos were just pushed to. Unchanged, it's a free 304.
+            if let res = try? await probePushes() {
+                requests += 1
+                if res.notModified { notModified += 1 }
             }
         }
 
@@ -145,6 +167,7 @@ actor RunStore {
                     repos[name]?.error = message
                 }
                 repos[name]?.checkedAt = now()
+                repos[name]?.pushedSinceCheck = false
             }
         }
 
@@ -166,6 +189,28 @@ actor RunStore {
         } catch {
             return .failed(error.localizedDescription)
         }
+    }
+
+    /// Marks repos whose `pushed_at` moved since we last looked, so this scan checks them.
+    private func probePushes() async throws -> (notModified: Bool, pushed: [String]) {
+        let res = try await client.get(Self.probePath, as: [GhRepo].self)
+        probedAt = now()
+        guard !res.notModified else { return (true, []) }
+        var pushed: [String] = []
+        for repo in res.data where !repo.archived && !repo.disabled {
+            if var existing = repos[repo.fullName] {
+                if let new = repo.pushedAt, new > (existing.pushedAt ?? .distantPast) {
+                    existing.pushedAt = new
+                    existing.pushedSinceCheck = true
+                    repos[repo.fullName] = existing
+                    pushed.append(repo.fullName)
+                }
+            } else {
+                repos[repo.fullName] = RepoState(fullName: repo.fullName, pushedAt: repo.pushedAt)
+                pushed.append(repo.fullName)
+            }
+        }
+        return (false, pushed)
     }
 
     private func refreshRepos() async throws -> (requests: Int, notModified: Int) {
@@ -192,6 +237,7 @@ actor RunStore {
         for repo in states {
             switch tier(repo, at: now) {
             case .active: tiers.active += 1
+            case .hot: tiers.hot += 1
             case .recent: tiers.recent += 1
             case .quiet: tiers.quiet += 1
             }

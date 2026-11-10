@@ -9,6 +9,8 @@ struct RateLimitInfo: Sendable, Equatable {
 
 struct Tiers: Sendable, Equatable {
     var active = 0
+    /// Pushed to, or had a run start, within the last hour.
+    var hot = 0
     var recent = 0
     var quiet = 0
 }

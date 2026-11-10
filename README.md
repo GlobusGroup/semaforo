@@ -77,6 +77,8 @@ If the menu bar is full, the icon can end up hidden behind the notch. Hold ⌘ a
 
 To use debug mode with the installed app instead: `open /Applications/Azioni.app --args -debug YES`, or `defaults write com.azioni.mac debug -bool YES` to keep it on (`defaults delete com.azioni.mac debug` to turn it off).
 
+The Mac app also watches for pushes. Every 20 seconds it reads one page of your repo list, newest push first; when it hasn't changed that's a free `304`. A repo whose `pushed_at` moved is checked straight away, and any repo pushed to or with a run started in the last hour is polled every 20 seconds, like repos with a run in progress. New runs usually show up within about 20 seconds, plus up to a minute of GitHub's own API caching.
+
 The web app and the Mac app use the same `gh` token, so they share its 5,000 requests an hour. Run one at a time.
 
 ## Notes

@@ -29,6 +29,35 @@ import Testing
         #expect(newest.workflowName == "CI")
     }
 
+    @Test func pushProbeChecksAQuietRepoAtOnce() async throws {
+        let fake = FakeGitHub.standardScenario()
+        let store = fake.makeStore()
+        _ = try await store.scan()
+
+        // Someone pushes to a quiet repo (normally checked every 15 min) and a run starts.
+        fake.clock.advance(30)
+        let now = fake.clock.now
+        fake.updateRepo("org/quiet-5") { repo in
+            repo.pushedAt = now
+            repo.runs = [FakeGitHub.run(id: 999_999, repo: "org/quiet-5", status: "queued", conclusion: nil, startedAt: now)]
+        }
+        let before = fake.requests.count
+        let snap = try await store.scan()
+        let paths = fake.requests.dropFirst(before).map(\.path)
+        #expect(paths.contains("/user/repos"), "the probe ran")
+        #expect(paths.contains("/repos/org/quiet-5/actions/runs"), "the pushed repo was checked straight away")
+        #expect(snap.runs.contains { $0.id == 999_999 })
+        #expect(snap.sync.tiers.active == 4)
+
+        // Nothing new: the probe is a free 304 and the quiet repos stay untouched.
+        fake.clock.advance(30)
+        let before2 = fake.requests.count
+        let again = try await store.scan()
+        let probe = fake.requests.dropFirst(before2).filter { $0.path == "/user/repos" }
+        #expect(probe.count == 1)
+        #expect(again.sync.lastScan.notModified == again.sync.lastScan.requests)
+    }
+
     @Test func fullScenario() async throws {
         let fake = FakeGitHub.standardScenario()
         let store = fake.makeStore()
@@ -42,7 +71,8 @@ import Testing
         }
         let second = try await store.scan(force: true)
         #expect(second.sync.lastScan == ScanStats(reposChecked: 15, requests: 17, notModified: 16))
-        #expect(second.sync.tiers == Tiers(active: 2, recent: 13, quiet: 137))
+        // active-0 just finished; pushed 21 minutes ago, so it stays hot (polled every 20 s).
+        #expect(second.sync.tiers == Tiers(active: 2, hot: 1, recent: 12, quiet: 137))
         #expect(second.runs.count == first.runs.count)
 
         // Rate-limit phase: GitHub answers 403 + remaining 0; cached runs are still served.
