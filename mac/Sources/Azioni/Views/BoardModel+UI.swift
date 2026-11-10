@@ -27,14 +27,19 @@ enum RunFilter: String, CaseIterable, Identifiable {
 }
 
 extension BoardModel {
-    /// Repos for the sidebar: live ones first, then by latest activity.
+    /// Repos for the sidebar and the overview, most recently changed first. A live run counts as
+    /// a change right now, so repos with runs in progress come first anyway.
     func sidebarRepos(filter: RunFilter, search: String) -> [RepoSummary] {
         let query = search.trimmingCharacters(in: .whitespaces)
         return repos
-            .filter { filter.matches($0) && (query.isEmpty || $0.fullName.localizedCaseInsensitiveContains(query)) }
+            .filter { repo in
+                filter.matches(repo) && (query.isEmpty
+                    || repo.fullName.localizedCaseInsensitiveContains(query)
+                    || repo.runs.contains { $0.matches(query) })
+            }
             .sorted { a, b in
                 if a.hasLive != b.hasLive { return a.hasLive }
-                return a.latestActivity > b.latestActivity
+                return a.lastChange != b.lastChange ? a.lastChange > b.lastChange : a.fullName < b.fullName
             }
     }
 
@@ -56,6 +61,13 @@ extension BoardModel {
         return byID.values
             .filter { $0.signal == .failure }
             .sorted { $0.updatedAt > $1.updatedAt }
+    }
+}
+
+extension RepoSummary {
+    /// When anything last happened in this repo: the latest run start or finish.
+    var lastChange: Date {
+        runs.map { max($0.updatedAt, $0.startedAt) }.max() ?? .distantPast
     }
 }
 

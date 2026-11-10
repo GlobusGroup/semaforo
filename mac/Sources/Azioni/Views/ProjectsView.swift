@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: Hashable {
+    case overview
     case recent
     case repo(String)
 }
@@ -8,7 +9,7 @@ enum SidebarItem: Hashable {
 /// The projects window: sidebar of repos, detail table of runs.
 struct ProjectsView: View {
     @Environment(BoardModel.self) private var model
-    @State private var selection: SidebarItem? = .recent
+    @State private var selection: SidebarItem? = .overview
     @State private var search = ""
     @State private var filter: RunFilter = .all
 
@@ -37,6 +38,8 @@ struct ProjectsView: View {
     private var sidebar: some View {
         let repos = model.sidebarRepos(filter: filter, search: search)
         return List(selection: $selection) {
+            Label("All repositories", systemImage: "square.grid.2x2")
+                .tag(SidebarItem.overview)
             Label("Recent activity", systemImage: "clock.arrow.circlepath")
                 .tag(SidebarItem.recent)
             Section("Repositories") {
@@ -69,7 +72,14 @@ struct ProjectsView: View {
             } else {
                 ContentUnavailableView("No runs", systemImage: "tray", description: Text(name))
             }
-        case .recent, nil:
+        case .overview, nil:
+            OverviewDetail(
+                repos: model.sidebarRepos(filter: filter, search: search),
+                loaded: model.fetchedAt != nil,
+                problem: model.problem,
+                showRepo: { selection = .repo($0) }
+            )
+        case .recent:
             RecentActivityDetail(runs: model.activity(filter: filter, search: search), loaded: model.fetchedAt != nil, problem: model.problem)
         }
     }
