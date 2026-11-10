@@ -33,9 +33,18 @@ cp "$mac_dir/Resources/Info.plist" "$app/Contents/Info.plist"
 cp "$mac_dir/Resources/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
 plutil -lint -s "$app/Contents/Info.plist"
 
-echo "==> signing (ad hoc)"
-codesign --force -s - --timestamp=none "$app"
-codesign -v "$app"
+# A stable identity keeps macOS treating rebuilds as the same app (login item, notification
+# permission). Override with AZIONI_SIGN_IDENTITY; falls back to ad hoc if it isn't in the keychain.
+identity="${AZIONI_SIGN_IDENTITY:-Apple Development: (LB46Y8ZZY5)}"
+match="$(security find-identity -v -p codesigning | grep -F "${identity#Apple Development: }" | head -1 | awk '{print $2}' || true)"
+if [[ -n "$match" ]]; then
+  echo "==> signing with $(security find-identity -v -p codesigning | grep "$match" | sed -E 's/.*"(.*)"/\1/')"
+  codesign --force --options runtime --timestamp=none -s "$match" "$app"
+else
+  echo "==> signing (ad hoc; no \"$identity\" certificate in the keychain)"
+  codesign --force -s - --timestamp=none "$app"
+fi
+codesign -v --strict "$app"
 
 if $install; then
   dest_dir="/Applications"

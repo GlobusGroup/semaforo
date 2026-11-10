@@ -57,10 +57,12 @@ Requirements:
 - [GitHub CLI](https://cli.github.com/) authenticated (`gh auth login`)
 
 ```bash
-npm run mac                          # builds and ad hoc signs mac/build/Azioni.app
+npm run mac                          # builds and signs mac/build/Azioni.app
 mac/scripts/build-app.sh --install   # same, then copies it to /Applications
 cd mac && swift test                 # tests (fake GitHub, no network)
 ```
+
+The app is signed with the Apple Development certificate for team `LB46Y8ZZY5` when it's in the keychain (set `AZIONI_SIGN_IDENTITY` to use another), otherwise ad hoc. A stable signature keeps macOS treating each rebuild as the same app, so Open at login and notification permission stick. It isn't notarised, so on another Mac you'd need to allow it in System Settings › Privacy & Security.
 
 `--install` quits a running copy first. The app is menu-bar-only, so it has no Dock icon.
 
