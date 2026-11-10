@@ -20,13 +20,14 @@ final class AppUpdater {
 
     @ObservationIgnored private let controller: SPUStandardUpdaterController
     @ObservationIgnored private let reminders = Reminders()
+    @ObservationIgnored private let relauncher = Relauncher()
     @ObservationIgnored private var observation: NSKeyValueObservation?
 
     private init() {
         let hasFeed = (Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String)?.isEmpty == false
         isActive = hasFeed && !DebugController.isEnabled
         controller = SPUStandardUpdaterController(
-            startingUpdater: isActive, updaterDelegate: nil, userDriverDelegate: reminders
+            startingUpdater: isActive, updaterDelegate: relauncher, userDriverDelegate: reminders
         )
         observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
             let can = updater.canCheckForUpdates
@@ -59,7 +60,20 @@ final class AppUpdater {
     }
 }
 
-/// Azioni is a menu bar app (no Dock icon), so a window Sparkle opens on its daily check would sit
+/// Sparkle installs once the app quits, but AppKit turns down a quit ("User cancelled") while a
+/// window has a sheet attached. Updates are usually started from the Settings sheet, so close any
+/// sheets first, or the installer waits forever for an app that never quits.
+private final class Relauncher: NSObject, SPUUpdaterDelegate {
+    func updaterWillRelaunchApplication(_ updater: SPUUpdater) {
+        MainActor.assumeIsolated {
+            for window in NSApp.windows {
+                if let sheet = window.attachedSheet { window.endSheet(sheet) }
+            }
+        }
+    }
+}
+
+/// Semaforo is a menu bar app (no Dock icon), so a window Sparkle opens on its daily check would sit
 /// behind whatever the user is doing. Opting into gentle reminders tells Sparkle we handle that:
 /// we bring the app forward so the "new version available" window is actually seen.
 private final class Reminders: NSObject, SPUStandardUserDriverDelegate {
