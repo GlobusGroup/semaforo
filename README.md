@@ -25,6 +25,7 @@ Open [https://azioni.test](https://azioni.test) (port 3106, reserved in Beacon).
 | `npm run preview` | Preview production build (API included) |
 | `npm run mac`  | Build the Mac app (see below) |
 | `npm run mac:debug` | Rebuild and relaunch the Mac app in debug mode |
+| `npm run mac:release` | Notarised universal build to share (see Sharing the app) |
 
 ## How it stays within the rate limit
 
@@ -67,6 +68,19 @@ The app is signed with the Apple Development certificate for team `LB46Y8ZZY5` w
 `--install` quits a running copy first. The app is menu-bar-only, so it has no Dock icon.
 
 If the menu bar is full, the icon can end up hidden behind the notch. Hold ⌘ and drag it further right; the position is remembered.
+
+### Sharing the app
+
+`npm run mac:release` builds a universal (Apple silicon + Intel) app, signs it with a Developer ID certificate, notarises and staples it, and writes `mac/build/Azioni-<version>.zip`. Anyone can then unzip it and open it normally.
+
+It needs two things set up once:
+
+1. A **Developer ID Application** certificate in your keychain. In Xcode › Settings › Accounts, pick the team, Manage Certificates › + › Developer ID Application. Only the account holder or an admin of a paid Apple Developer team can create one; Apple Development certificates can't be notarised.
+2. Notary credentials saved in the keychain: `xcrun notarytool store-credentials azioni-notary --apple-id <your Apple ID> --team-id <team ID>`. It asks for an app-specific password, made at account.apple.com › Sign-In and Security.
+
+Until then, `mac/scripts/build-app.sh --universal` makes an app signed but not notarised. On another Mac it opens after System Settings › Privacy & Security › Open Anyway.
+
+Whoever runs it also needs the GitHub CLI signed in (`gh auth login`) with access to the repos.
 
 ### Debug mode
 

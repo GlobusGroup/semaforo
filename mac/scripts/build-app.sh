@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Builds mac/build/Azioni.app from the SwiftPM package and ad hoc signs it.
-#   mac/scripts/build-app.sh            build only
-#   mac/scripts/build-app.sh --install  build, then copy to /Applications/Azioni.app
+# Builds mac/build/Azioni.app from the SwiftPM package and signs it.
+#   mac/scripts/build-app.sh              build only
+#   mac/scripts/build-app.sh --install    build, then copy to /Applications/Azioni.app
+#   mac/scripts/build-app.sh --universal  arm64 + x86_64 (for other people's Macs; see release.sh)
 set -euo pipefail
 
-usage() { echo "usage: $(basename "$0") [--install]" >&2; }
+usage() { echo "usage: $(basename "$0") [--install] [--universal]" >&2; }
 
 install=false
+arch_flags=()
 for arg in "$@"; do
   case "$arg" in
     --install) install=true ;;
+    --universal) arch_flags=(--arch arm64 --arch x86_64) ;;
     -h|--help) usage; exit 0 ;;
     *) usage; exit 2 ;;
   esac
@@ -19,9 +22,9 @@ mac_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 app_name="Azioni"
 app="$mac_dir/build/$app_name.app"
 
-echo "==> swift build -c release"
-(cd "$mac_dir" && swift build -c release)
-bin_dir="$(cd "$mac_dir" && swift build -c release --show-bin-path)"
+echo "==> swift build -c release ${arch_flags[*]:-}"
+(cd "$mac_dir" && swift build -c release ${arch_flags[@]+"${arch_flags[@]}"})
+bin_dir="$(cd "$mac_dir" && swift build -c release ${arch_flags[@]+"${arch_flags[@]}"} --show-bin-path)"
 binary="$bin_dir/$app_name"
 [[ -x "$binary" ]] || { echo "error: no executable at $binary" >&2; exit 1; }
 
@@ -39,7 +42,10 @@ identity="${AZIONI_SIGN_IDENTITY:-Apple Development: (LB46Y8ZZY5)}"
 match="$(security find-identity -v -p codesigning | grep -F "${identity#Apple Development: }" | head -1 | awk '{print $2}' || true)"
 if [[ -n "$match" ]]; then
   echo "==> signing with $(security find-identity -v -p codesigning | grep "$match" | sed -E 's/.*"(.*)"/\1/')"
-  codesign --force --options runtime --timestamp=none -s "$match" "$app"
+  # Notarisation (Developer ID) needs a secure timestamp; local dev builds don't.
+  timestamp=--timestamp=none
+  [[ "$identity" == "Developer ID Application"* ]] && timestamp=--timestamp
+  codesign --force --options runtime "$timestamp" -s "$match" "$app"
 else
   echo "==> signing (ad hoc; no \"$identity\" certificate in the keychain)"
   codesign --force -s - --timestamp=none "$app"
