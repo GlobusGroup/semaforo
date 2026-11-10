@@ -1,10 +1,12 @@
 import ServiceManagement
 import SwiftUI
 
-/// Settings sheet in the projects window (toolbar gear, ⌘,): login item, notifications, refresh, API budget.
+/// Settings sheet in the projects window (toolbar gear, ⌘,): login item, notifications, refresh, API budget,
+/// updates.
 struct SettingsView: View {
     @Environment(BoardModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+    private let updater = AppUpdater.shared
 
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginNote: String?
@@ -76,6 +78,23 @@ struct SettingsView: View {
                         .disabled(model.isRefreshing)
                     }
                 }
+
+                Section("Updates") {
+                    Toggle("Check for updates automatically", isOn: Binding(
+                        get: { updater.checksAutomatically },
+                        set: { updater.checksAutomatically = $0 }
+                    ))
+                    .disabled(!updater.isActive)
+                    HStack {
+                        Text(updater.isActive
+                            ? "Semaforo \(updater.version)"
+                            : "Semaforo \(updater.version) · updates are off in local builds")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Check for Updates…") { updater.checkForUpdates() }
+                            .disabled(!updater.isActive || !updater.canCheckForUpdates)
+                    }
+                }
             }
             .formStyle(.grouped)
 
@@ -110,7 +129,7 @@ struct SettingsView: View {
         let status = SMAppService.mainApp.status
         openAtLogin = status == .enabled || status == .requiresApproval
         if status == .requiresApproval {
-            loginNote = "Approve Azioni in System Settings › General › Login Items."
+            loginNote = "Approve Semaforo in System Settings › General › Login Items."
         }
     }
 }

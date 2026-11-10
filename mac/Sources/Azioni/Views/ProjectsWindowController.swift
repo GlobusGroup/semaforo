@@ -24,7 +24,7 @@ final class ProjectsWindowController: NSObject, NSWindowDelegate {
         let host = NSHostingController(rootView: ProjectsView().environment(model))
         host.sceneBridgingOptions = .all
         let window = NSWindow(contentViewController: host)
-        window.title = "Azioni"
+        window.title = "Semaforo"
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.toolbarStyle = .unified
         window.isReleasedWhenClosed = false

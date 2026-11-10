@@ -138,7 +138,7 @@ actor GitHubClient {
         req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
-        req.setValue("azioni-mac", forHTTPHeaderField: "User-Agent")
+        req.setValue("semaforo-mac", forHTTPHeaderField: "User-Agent")
         if let etag { req.setValue(etag, forHTTPHeaderField: "If-None-Match") }
 
         let data: Data

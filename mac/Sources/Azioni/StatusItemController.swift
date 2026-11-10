@@ -101,13 +101,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.toolTip = "\(n) running"
         case .problem:
             button.image = StatusIcon.image(.problem)
-            button.toolTip = model.problem ?? "Azioni can't reach GitHub"
+            button.toolTip = model.problem ?? "Semaforo can't reach GitHub"
         case .passed:
             button.image = StatusIcon.image(.passed)
-            button.toolTip = "Azioni: latest run passed"
+            button.toolTip = "Semaforo: latest run passed"
         case .idle:
             button.image = StatusIcon.image(.idle)
-            button.toolTip = "Azioni: idle"
+            button.toolTip = "Semaforo: idle"
         }
         if button.attributedTitle.length == 0 { button.imagePosition = .imageOnly }
         if debug != nil {

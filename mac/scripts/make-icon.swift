@@ -1,4 +1,4 @@
-// Draws the Azioni app icon and writes mac/Resources/AppIcon.icns.
+// Draws the Semaforo app icon and writes mac/Resources/AppIcon.icns.
 //   swift mac/scripts/make-icon.swift
 // Re-run only when the design changes; the .icns is committed.
 import AppKit
