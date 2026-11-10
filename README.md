@@ -58,7 +58,7 @@ Requirements:
 
 ```bash
 npm run mac                          # builds and ad hoc signs mac/build/Azioni.app
-mac/scripts/build-app.sh --install   # same, then copies it to ~/Applications
+mac/scripts/build-app.sh --install   # same, then copies it to /Applications
 cd mac && swift test                 # tests (fake GitHub, no network)
 ```
 
@@ -75,7 +75,7 @@ If the menu bar is full, the icon can end up hidden behind the notch. Hold ⌘ a
 - **Add 1 failure / Add 4 failures**: go through the real new-failure detection, so you get one notification, or the summary for more than 3.
 - **Test notification** posts one directly; **Forget seen** moves the seen marker back an hour so the badge comes back.
 
-To use debug mode with the installed app instead: `open ~/Applications/Azioni.app --args -debug YES`, or `defaults write com.azioni.mac debug -bool YES` to keep it on (`defaults delete com.azioni.mac debug` to turn it off).
+To use debug mode with the installed app instead: `open /Applications/Azioni.app --args -debug YES`, or `defaults write com.azioni.mac debug -bool YES` to keep it on (`defaults delete com.azioni.mac debug` to turn it off).
 
 The web app and the Mac app use the same `gh` token, so they share its 5,000 requests an hour. Run one at a time.
 

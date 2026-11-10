@@ -5,7 +5,7 @@ import Observation
 ///
 /// Turn it on with any of:
 ///   mac/scripts/debug.sh                                  (rebuilds and relaunches in debug mode)
-///   open ~/Applications/Azioni.app --args -debug YES      (one launch)
+///   open /Applications/Azioni.app --args -debug YES      (one launch)
 ///   defaults write com.azioni.mac debug -bool YES         (every launch; `defaults delete com.azioni.mac debug` to undo)
 ///   AZIONI_DEBUG=1 swift run Azioni
 @MainActor

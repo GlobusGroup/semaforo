@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds mac/build/Azioni.app from the SwiftPM package and ad hoc signs it.
 #   mac/scripts/build-app.sh            build only
-#   mac/scripts/build-app.sh --install  build, then copy to ~/Applications/Azioni.app
+#   mac/scripts/build-app.sh --install  build, then copy to /Applications/Azioni.app
 set -euo pipefail
 
 usage() { echo "usage: $(basename "$0") [--install]" >&2; }
@@ -38,7 +38,7 @@ codesign --force -s - --timestamp=none "$app"
 codesign -v "$app"
 
 if $install; then
-  dest_dir="$HOME/Applications"
+  dest_dir="/Applications"
   dest="$dest_dir/$app_name.app"
   if pgrep -xq "$app_name"; then
     echo "==> $app_name is running; quitting it"
