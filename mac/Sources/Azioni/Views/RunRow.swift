@@ -17,6 +17,7 @@ struct DurationText: View {
 
 /// One run in a compact list: dot, "repo · workflow", "branch · title", and elapsed / age on the right.
 struct RunRow: View {
+    @Environment(BoardModel.self) private var model: BoardModel?
     var run: WorkflowRun
     var highlighted = false
 
@@ -26,7 +27,7 @@ struct RunRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     // The repo name is what you scan for; let the workflow name truncate first.
-                    Text(run.repoFullName)
+                    Text((model?.repoNaming ?? .full).name(run.repoFullName))
                         .fontWeight(.medium)
                         .layoutPriority(1)
                     Text("·").foregroundStyle(.secondary)

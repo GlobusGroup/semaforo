@@ -42,9 +42,12 @@ final class Notifier: NSObject, Notifying {
         center?.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
     }
 
+    /// Set by BoardModel before each batch, so titles drop the org when every repo shares it.
+    var naming: RepoNaming = .full
+
     func notifyFailures(_ runs: [WorkflowRun]) {
         guard let center else { return }
-        for item in Self.plan(for: runs) {
+        for item in Self.plan(for: runs, naming: naming) {
             let content = UNMutableNotificationContent()
             content.title = item.title
             content.body = item.body
@@ -58,19 +61,19 @@ final class Notifier: NSObject, Notifying {
     }
 
     /// ≤3 runs → one notification each; more → a single "N workflows failed" summary.
-    nonisolated static func plan(for runs: [WorkflowRun]) -> [NotificationContent] {
+    nonisolated static func plan(for runs: [WorkflowRun], naming: RepoNaming = .full) -> [NotificationContent] {
         guard !runs.isEmpty else { return [] }
         if runs.count <= maxIndividual {
             return runs.map { run in
                 NotificationContent(
                     identifier: "run-\(run.id)",
-                    title: title(for: run),
+                    title: title(for: run, naming: naming),
                     body: run.displayTitle,
                     url: run.htmlURL
                 )
             }
         }
-        let repos = orderedUnique(runs.map(\.repoFullName))
+        let repos = orderedUnique(runs.map { naming.name($0.repoFullName) })
         let shown = repos.prefix(3).joined(separator: ", ")
         let more = repos.count > 3 ? " and \(repos.count - 3) more" : ""
         return [
@@ -83,10 +86,10 @@ final class Notifier: NSObject, Notifying {
         ]
     }
 
-    /// "org/repo · CI failed on main".
-    nonisolated static func title(for run: WorkflowRun) -> String {
+    /// "org/repo · CI failed on main" ("repo · …" when the org is hidden).
+    nonisolated static func title(for run: WorkflowRun, naming: RepoNaming = .full) -> String {
         let workflow = run.workflowName.isEmpty ? run.name : run.workflowName
-        var title = "\(run.repoFullName) · \(workflow) failed"
+        var title = "\(naming.name(run.repoFullName)) · \(workflow) failed"
         if let branch = run.headBranch, !branch.isEmpty { title += " on \(branch)" }
         return title
     }

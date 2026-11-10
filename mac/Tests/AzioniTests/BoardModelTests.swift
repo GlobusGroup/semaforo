@@ -403,3 +403,18 @@ func makeModel(
         #expect(await source.calls.count == 1)
     }
 }
+
+@Test func repoNamingHidesSharedOwner() {
+    let shared = RepoNaming(fullNames: ["GlobusGroup/craft", "GlobusGroup/astro"])
+    #expect(shared.hiddenOwner == "GlobusGroup")
+    #expect(shared.name("GlobusGroup/craft") == "craft")
+    #expect(shared.owner("GlobusGroup/craft") == nil)
+
+    let mixed = RepoNaming(fullNames: ["GlobusGroup/craft", "you/dotfiles"])
+    #expect(mixed.hiddenOwner == nil)
+    #expect(mixed.name("you/dotfiles") == "you/dotfiles")
+    #expect(mixed.owner("you/dotfiles") == "you")
+
+    let run = makeRun(id: 1, repo: "GlobusGroup/craft", conclusion: "failure")
+    #expect(Notifier.title(for: run, naming: shared) == "craft · CI failed on main")
+}

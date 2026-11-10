@@ -64,6 +64,38 @@ extension BoardModel {
     }
 }
 
+/// How repos are named on screen. When every repo has the same owner (an org), the owner adds
+/// nothing, so only the repo name is shown; with several owners, full "owner/repo" names stay.
+struct RepoNaming: Sendable, Equatable {
+    var hiddenOwner: String?
+
+    static let full = RepoNaming(hiddenOwner: nil)
+
+    init(hiddenOwner: String?) { self.hiddenOwner = hiddenOwner }
+
+    init(fullNames: some Sequence<String>) {
+        let owners = Set(fullNames.compactMap { $0.split(separator: "/", maxSplits: 1).first.map(String.init) })
+        hiddenOwner = owners.count == 1 ? owners.first : nil
+    }
+
+    /// "org/repo" → "repo" when the owner is hidden, otherwise unchanged.
+    func name(_ fullName: String) -> String {
+        guard let hiddenOwner, fullName.hasPrefix(hiddenOwner + "/") else { return fullName }
+        return String(fullName.dropFirst(hiddenOwner.count + 1))
+    }
+
+    /// The owner to show under a repo name, if any.
+    func owner(_ fullName: String) -> String? {
+        let parts = fullName.split(separator: "/", maxSplits: 1)
+        guard parts.count == 2, String(parts[0]) != hiddenOwner else { return nil }
+        return String(parts[0])
+    }
+}
+
+extension BoardModel {
+    var repoNaming: RepoNaming { RepoNaming(fullNames: runs.map(\.repoFullName)) }
+}
+
 extension RepoSummary {
     /// When anything last happened in this repo: the latest run start or finish.
     var lastChange: Date {

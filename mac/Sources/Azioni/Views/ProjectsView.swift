@@ -86,16 +86,17 @@ struct ProjectsView: View {
 }
 
 private struct RepoSidebarRow: View {
+    @Environment(BoardModel.self) private var model
     var repo: RepoSummary
 
     var body: some View {
-        let parts = repo.fullName.split(separator: "/", maxSplits: 1).map(String.init)
+        let naming = model.repoNaming
         HStack(spacing: 8) {
             StatusDot(signal: repo.latest?.signal ?? .neutral)
             VStack(alignment: .leading, spacing: 0) {
-                Text(parts.last ?? repo.fullName).lineLimit(1)
-                if parts.count == 2 {
-                    Text(parts[0]).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(naming.name(repo.fullName)).lineLimit(1)
+                if let owner = naming.owner(repo.fullName) {
+                    Text(owner).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
@@ -142,6 +143,7 @@ private struct RecentActivityDetail: View {
 }
 
 private struct RepoDetail: View {
+    @Environment(BoardModel.self) private var model
     var repo: RepoSummary
     var filter: RunFilter
 
@@ -154,7 +156,7 @@ private struct RepoDetail: View {
                 RunsTable(runs: runs, showRepo: false)
             }
         }
-        .navigationTitle(repo.fullName)
+        .navigationTitle(model.repoNaming.name(repo.fullName))
         .navigationSubtitle(repo.latest.map { "Latest: \($0.signal.label)" } ?? "No runs")
         .toolbar {
             ToolbarItem {
@@ -171,6 +173,7 @@ private struct RepoDetail: View {
 
 /// Runs as a table; double-click (or the context menu) opens a run on GitHub.
 struct RunsTable: View {
+    @Environment(BoardModel.self) private var model: BoardModel?
     var runs: [WorkflowRun]
     var showRepo: Bool
     @State private var selection: Set<WorkflowRun.ID> = []
@@ -180,7 +183,9 @@ struct RunsTable: View {
             TableColumn("") { run in GitHubStatusIcon(run: run, size: 14) }
                 .width(18)
             // `if` inside a TableColumnBuilder needs macOS 14.4; hide the column instead.
-            TableColumn("Repository") { run in Text(run.repoFullName).help(run.repoFullName) }
+            TableColumn("Repository") { run in
+                Text((model?.repoNaming ?? .full).name(run.repoFullName)).help(run.repoFullName)
+            }
                 .width(min: 100, ideal: 170)
                 .defaultVisibility(showRepo ? .visible : .hidden)
             TableColumn("Workflow") { run in Text(run.workflowName) }

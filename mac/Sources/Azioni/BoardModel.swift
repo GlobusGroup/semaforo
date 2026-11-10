@@ -230,7 +230,10 @@ final class BoardModel {
         } else {
             problem = nil
         }
-        if !fresh.isEmpty { notifier.notifyFailures(fresh) }
+        if !fresh.isEmpty {
+            (notifier as? Notifier)?.naming = repoNaming
+            notifier.notifyFailures(fresh)
+        }
     }
 
     /// Runs that turned into failures since the previous successful snapshot.

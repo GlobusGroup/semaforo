@@ -38,19 +38,20 @@ struct OverviewDetail: View {
 }
 
 private struct RepoCard: View {
+    @Environment(BoardModel.self) private var model
     var repo: RepoSummary
     var showRepo: () -> Void
 
     var body: some View {
-        let parts = repo.fullName.split(separator: "/", maxSplits: 1).map(String.init)
+        let naming = model.repoNaming
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 StatusDot(signal: repo.latest?.signal ?? .neutral, size: 10)
                 Button(action: showRepo) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(parts.last ?? repo.fullName).font(.headline)
-                        if parts.count == 2 {
-                            Text(parts[0]).font(.subheadline).foregroundStyle(.secondary)
+                        Text(naming.name(repo.fullName)).font(.headline)
+                        if let owner = naming.owner(repo.fullName) {
+                            Text(owner).font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .lineLimit(1)
