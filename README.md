@@ -24,6 +24,7 @@ Open [https://azioni.test](https://azioni.test) (port 3106, reserved in Beacon).
 | `npm run build`| Typecheck + production build |
 | `npm run preview` | Preview production build (API included) |
 | `npm run mac`  | Build the Mac app (see below) |
+| `npm run mac:debug` | Rebuild and relaunch the Mac app in debug mode |
 
 ## How it stays within the rate limit
 
@@ -62,6 +63,19 @@ cd mac && swift test                 # tests (fake GitHub, no network)
 ```
 
 `--install` quits a running copy first. The app is menu-bar-only, so it has no Dock icon.
+
+If the menu bar is full, the icon can end up hidden behind the notch. Hold ⌘ and drag it further right; the position is remembered.
+
+### Debug mode
+
+`npm run mac:debug` rebuilds the app and relaunches it in debug mode. The icon gets an orange **DBG** tag and the menu gains a Debug section:
+
+- **Scenario**: live GitHub, or fixtures (all good, 3 running, 2 new failures, a busy board of 8 repos, and each problem: gh not signed in, rate limited, offline). Fixtures cost no API requests.
+- **Start a run / Finish: pass / Finish: fail**: push a fake run through running → done, on top of any scenario, live included.
+- **Add 1 failure / Add 4 failures**: go through the real new-failure detection, so you get one notification, or the summary for more than 3.
+- **Test notification** posts one directly; **Forget seen** moves the seen marker back an hour so the badge comes back.
+
+To use debug mode with the installed app instead: `open ~/Applications/Azioni.app --args -debug YES`, or `defaults write com.azioni.mac debug -bool YES` to keep it on (`defaults delete com.azioni.mac debug` to turn it off).
 
 The web app and the Mac app use the same `gh` token, so they share its 5,000 requests an hour. Run one at a time.
 

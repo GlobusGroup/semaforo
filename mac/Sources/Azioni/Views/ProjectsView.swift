@@ -20,6 +20,18 @@ struct ProjectsView: View {
             detail
         }
         .searchable(text: $search, placement: .sidebar, prompt: "Search")
+        // Present for every selection, so the toolbar (and its height) never comes and goes.
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    Task { await model.refresh() }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .help("Check GitHub for new runs now")
+                .keyboardShortcut("r", modifiers: .command)
+            }
+        }
     }
 
     private var sidebar: some View {
@@ -114,6 +126,8 @@ private struct RecentActivityDetail: View {
             }
         }
         .navigationTitle("Recent activity")
+        // Always set a subtitle: the repo detail has one, and a subtitle makes the title bar taller.
+        .navigationSubtitle(loaded ? "\(runs.count) run\(runs.count == 1 ? "" : "s")" : "Loading…")
     }
 }
 
@@ -131,7 +145,7 @@ private struct RepoDetail: View {
             }
         }
         .navigationTitle(repo.fullName)
-        .navigationSubtitle(repo.latest.map { "Latest: \($0.signal.label)" } ?? "")
+        .navigationSubtitle(repo.latest.map { "Latest: \($0.signal.label)" } ?? "No runs")
         .toolbar {
             ToolbarItem {
                 Button {

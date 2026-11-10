@@ -4,6 +4,7 @@ import SwiftUI
 /// Content of the status item's popover.
 struct MenuView: View {
     @Environment(BoardModel.self) private var model
+    @Environment(DebugController.self) private var debug: DebugController?
     var session: MenuSession
     var dismiss: @MainActor () -> Void
     var openWindow: @MainActor () -> Void
@@ -50,6 +51,11 @@ struct MenuView: View {
                 }
             }
             .padding(.vertical, 6)
+
+            if let debug {
+                Divider()
+                DebugSection(debug: debug)
+            }
 
             Divider()
 

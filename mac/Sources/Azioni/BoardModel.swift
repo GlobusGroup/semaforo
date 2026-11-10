@@ -157,6 +157,24 @@ final class BoardModel {
         defaults.set(date, forKey: Self.lastSeenKey)
     }
 
+    // MARK: Debug hooks
+
+    /// Debug mode: move the seen marker (persisted, like markSeen).
+    func setLastSeen(_ date: Date) {
+        lastSeenAt = date
+        defaults.set(date, forKey: Self.lastSeenKey)
+    }
+
+    /// Debug mode: forget everything, as if just launched. The next scan is a baseline again,
+    /// so switching scenarios doesn't fire notifications for the fixtures.
+    func resetForDebug() {
+        runs = []
+        sync = nil
+        fetchedAt = nil
+        problem = nil
+        previousSignals = nil
+    }
+
     // MARK: Scanning
 
     /// Runs one scan, or joins the one already in flight (scans never overlap).

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "mac": "mac/scripts/build-app.sh"
+    "mac": "mac/scripts/build-app.sh",
+    "mac:debug": "mac/scripts/debug.sh"
   },
   "dependencies": {
     "react": "^19.2.7",

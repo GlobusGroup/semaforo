@@ -12,15 +12,30 @@ final class MenuSession {
 @MainActor
 final class StatusItemController: NSObject, NSPopoverDelegate {
     private let model: BoardModel
-    private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    private let statusItem: NSStatusItem = {
+        // New items land on the left of the extras, which on a full menu bar is under the notch,
+        // where macOS hides them. Until the user ⌘-drags it somewhere, start near the clock.
+        // (Position is points from the right edge; macOS reads it when the item is created.)
+        let key = "NSStatusItem Preferred Position \(StatusItemController.autosaveName)"
+        if UserDefaults.standard.object(forKey: key) == nil {
+            UserDefaults.standard.set(260.0, forKey: key)
+        }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.autosaveName = StatusItemController.autosaveName
+        return item
+    }()
+    private static let autosaveName = "AzioniStatusItem"
     private let popover = NSPopover()
     private let session = MenuSession()
     private let openProjects: @MainActor () -> Void
+    private let debug: DebugController?
 
-    init(model: BoardModel, openProjects: @escaping @MainActor () -> Void) {
+    init(model: BoardModel, debug: DebugController? = nil, openProjects: @escaping @MainActor () -> Void) {
         self.model = model
+        self.debug = debug
         self.openProjects = openProjects
         super.init()
+
 
         if let button = statusItem.button {
             button.target = self
@@ -38,7 +53,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 self?.openProjects()
             }
         )
-        let host = NSHostingController(rootView: menu.environment(model))
+        let host = NSHostingController(rootView: menu.environment(model).environment(debug))
         host.sizingOptions = .preferredContentSize
         popover.contentViewController = host
 
@@ -87,16 +102,27 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             )
             button.toolTip = "\(count) running"
         case .ok:
-            button.image = Self.symbol("checkmark.circle", color: nil)
+            button.image = Self.symbol("checkmark.circle.fill", color: nil)
             button.attributedTitle = NSAttributedString()
             button.imagePosition = .imageOnly
             button.toolTip = "Azioni: all good"
         case .problem:
-            button.image = Self.symbol("exclamationmark.icloud", color: nil)
+            // Orange rather than greyed out: a disabled-looking icon is easy to miss entirely.
+            button.image = Self.symbol("exclamationmark.icloud.fill", color: .systemOrange)
             button.attributedTitle = NSAttributedString()
             button.imagePosition = .imageOnly
-            button.appearsDisabled = true
             button.toolTip = model.problem ?? "Azioni can't reach GitHub"
+        }
+        if debug != nil {
+            // Tag the icon so a debug build is never mistaken for the real one.
+            let title = NSMutableAttributedString(attributedString: button.attributedTitle)
+            title.append(NSAttributedString(
+                string: " DBG",
+                attributes: [.font: NSFont.systemFont(ofSize: 9, weight: .heavy), .foregroundColor: NSColor.systemOrange]
+            ))
+            button.attributedTitle = title
+            button.imagePosition = .imageLeading
+            button.toolTip = "[debug] " + (button.toolTip ?? "")
         }
         button.setAccessibilityLabel(button.toolTip)
     }
@@ -104,7 +130,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     /// Coloured (non-template) when `color` is given, otherwise a template image that follows the menu bar.
     private static func symbol(_ name: String, color: NSColor?) -> NSImage? {
         guard let base = NSImage(systemSymbolName: name, accessibilityDescription: nil) else { return nil }
-        var config = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        // 16pt semibold reads like the system's own menu extras; 14pt regular was too faint.
+        var config = NSImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
         if let color {
             config = config.applying(NSImage.SymbolConfiguration(paletteColors: [color]))
         }

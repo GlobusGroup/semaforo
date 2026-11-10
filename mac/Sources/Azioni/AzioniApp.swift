@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var model: BoardModel?
     private var statusItem: StatusItemController?
     private var projectsWindow: ProjectsWindowController?
+    private var debug: DebugController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // LSUIElement covers the bundled app; this covers `swift run`.
@@ -34,11 +35,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let notifier = Notifier()
         notifier.requestAuthorization()
-        let model = BoardModel(notifier: notifier)
+        let model: BoardModel
+        if DebugController.isEnabled {
+            let source = DebugRunSource(live: RunStore())
+            model = BoardModel(store: source, notifier: notifier)
+            debug = DebugController(source: source, model: model, notifier: notifier)
+        } else {
+            model = BoardModel(notifier: notifier)
+        }
         let projectsWindow = ProjectsWindowController(model: model)
         self.model = model
         self.projectsWindow = projectsWindow
-        statusItem = StatusItemController(model: model) { [weak projectsWindow] in
+        statusItem = StatusItemController(model: model, debug: debug) { [weak projectsWindow] in
             projectsWindow?.show()
         }
         model.start()
