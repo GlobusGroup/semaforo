@@ -22,7 +22,7 @@ struct RunRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            StatusDot(signal: run.signal)
+            GitHubStatusIcon(run: run, size: 14)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     // The repo name is what you scan for; let the workflow name truncate first.
