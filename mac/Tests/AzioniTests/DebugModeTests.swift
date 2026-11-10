@@ -24,9 +24,13 @@ struct DebugModeTests {
     @Test func scenariosDriveTheIcon() async {
         let (model, source, _) = await makeModel()
 
+        await source.select(.idle, now: Date())
+        await model.scan(force: false)
+        #expect(model.iconState == .idle)
+
         await source.select(.allGood, now: Date())
         await model.scan(force: false)
-        #expect(model.iconState == .ok)
+        #expect(model.iconState == .passed)
 
         await source.select(.running, now: Date())
         await model.scan(force: false)

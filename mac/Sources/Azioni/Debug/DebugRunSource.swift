@@ -2,14 +2,15 @@ import Foundation
 
 /// What the debug source feeds BoardModel instead of (or on top of) GitHub.
 enum DebugScenario: String, CaseIterable, Identifiable, Sendable {
-    case live, allGood, running, failures, busy, noToken, rateLimited, offline
+    case live, idle, allGood, running, failures, busy, noToken, rateLimited, offline
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .live: "Live GitHub"
-        case .allGood: "All good"
+        case .idle: "Idle (nothing in 24 h)"
+        case .allGood: "All good (passed recently)"
         case .running: "3 running"
         case .failures: "2 new failures + 1 running"
         case .busy: "Busy board (8 repos)"
@@ -30,8 +31,10 @@ actor DebugRunSource: RunSource {
     private var injected: [WorkflowRun] = []
     private var nextID = 9_000_000_000
 
-    init(live: RunStore) {
+    init(live: RunStore, scenario: DebugScenario = .live, now: Date = Date()) {
         self.live = live
+        self.scenario = scenario
+        fixtures = DebugFixtures.runs(for: scenario, now: now)
     }
 
     func select(_ scenario: DebugScenario, now: Date) {
@@ -85,7 +88,7 @@ actor DebugRunSource: RunSource {
                 message: "GitHub API rate limit reached.", status: 403, kind: .rateLimited(until: until))
         case .offline:
             throw GitHubError(message: "The Internet connection appears to be offline.", status: 0, kind: .offline)
-        case .allGood, .running, .failures, .busy:
+        case .idle, .allGood, .running, .failures, .busy:
             let runs = Self.sorted(injected + fixtures)
             return RunsSnapshot(
                 fetchedAt: now,
@@ -145,6 +148,12 @@ enum DebugFixtures {
         switch scenario {
         case .live, .noToken, .rateLimited, .offline:
             return []
+        case .idle:
+            return [
+                make("acme/web", "CI", "Tidy header spacing", "main", "completed", "success", minutesAgo: 60 * 30),
+                make("acme/api", "CI", "Try a new cache key", "main", "completed", "cancelled", minutesAgo: 60 * 50),
+                make("you/dotfiles", "Lint", "zsh: faster prompt", "main", "completed", "success", minutesAgo: 60 * 72),
+            ]
         case .allGood:
             return passed
         case .running:

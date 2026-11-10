@@ -119,7 +119,7 @@ func makeModel(
         await model.refresh()
         #expect(model.runs.count == 1)
         #expect(model.unseenFailures.isEmpty)
-        #expect(model.iconState == .ok)
+        #expect(model.iconState == .idle)
     }
 
     @Test func failureAfterLastSeenIsUnseen() async {
@@ -144,7 +144,7 @@ func makeModel(
         model.markSeen()
         #expect(model.lastSeenAt == t0.addingTimeInterval(60))
         #expect(model.unseenFailures.isEmpty)
-        #expect(model.iconState == .ok)
+        #expect(model.iconState == .idle)
         #expect(defaults.object(forKey: BoardModel.lastSeenKey) as? Date == t0.addingTimeInterval(60))
 
         // A relaunch picks up the persisted value.
@@ -301,6 +301,30 @@ func makeModel(
         #expect(model.iconState == .problem)
     }
 
+    @Test func checkOnlyForRecentSuccess() async {
+        let passedRecently = makeRun(id: 1, updated: t0.addingTimeInterval(-3600))
+        let passedLongAgo = makeRun(id: 2, updated: t0.addingTimeInterval(-2 * 86_400))
+        let seenFailureAfter = makeRun(id: 3, conclusion: "failure", updated: t0.addingTimeInterval(-1800))
+        let cancelledAfter = makeRun(id: 4, conclusion: "cancelled", updated: t0.addingTimeInterval(-60))
+        let model = makeModel(FakeRunSource([
+            .success(snapshot([passedRecently])),
+            .success(snapshot([passedLongAgo])),
+            .success(snapshot([passedRecently, seenFailureAfter])),
+            .success(snapshot([passedRecently, cancelledAfter])),
+            .success(snapshot([])),
+        ]))
+        await model.refresh()
+        #expect(model.iconState == .passed)
+        await model.refresh()
+        #expect(model.iconState == .idle)   // too old
+        await model.refresh()
+        #expect(model.iconState == .idle)   // newest finished run failed (already seen)
+        await model.refresh()
+        #expect(model.iconState == .idle)   // newest finished run was cancelled
+        await model.refresh()
+        #expect(model.iconState == .idle)   // no runs
+    }
+
     @Test func iconPriority() async {
         let live = makeRun(id: 1, status: "queued", conclusion: nil, updated: t0.addingTimeInterval(10))
         let unseen = makeRun(id: 2, conclusion: "failure", updated: t0.addingTimeInterval(10))
@@ -325,11 +349,11 @@ func makeModel(
         await model.refresh()
         #expect(model.iconState == .running(1))
         await model.refresh()
-        #expect(model.iconState == .ok)
+        #expect(model.iconState == .idle)
         await model.refresh()
         #expect(model.iconState == .problem)
         await model.refresh()
-        #expect(model.iconState == .ok)
+        #expect(model.iconState == .idle)
     }
 
     @Test func refreshForcesAndDerivedLists() async {

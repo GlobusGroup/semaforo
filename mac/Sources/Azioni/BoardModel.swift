@@ -1,16 +1,18 @@
 import Foundation
 import Observation
 
-/// What the menu bar icon shows. Priority: failures > running > problem > ok.
+/// What the menu bar icon shows. Priority: failures > running > problem > passed > idle.
 enum IconState: Equatable, Sendable {
-    /// Red exclamationmark.triangle.fill with unseen count; running count beside it if > 0.
+    /// Red badge with the unseen count; running count beside it if > 0.
     case failures(unseen: Int, running: Int)
-    /// arrow.triangle.2.circlepath with live run count.
+    /// Blue badge with the live run count.
     case running(Int)
-    /// checkmark.circle, monochrome.
-    case ok
-    /// exclamationmark.icloud, dimmed.
+    /// Can't reach GitHub: dimmed mark, orange badge.
     case problem
+    /// Green check: the most recent finished run passed within `BoardModel.recentSuccessWindow`.
+    case passed
+    /// Plain mark: nothing running, nothing new, no recent success.
+    case idle
 }
 
 struct RepoSummary: Identifiable, Hashable, Sendable {
@@ -36,6 +38,8 @@ final class BoardModel {
     static let pollInterval: Duration = .seconds(20)
     static let lastSeenKey = "lastSeenAt"
     static let recentLimit = 8
+    /// How long a passing run keeps the green check on the icon.
+    static let recentSuccessWindow: TimeInterval = 24 * 60 * 60
 
     private(set) var runs: [WorkflowRun] = []
     private(set) var sync: SyncInfo?
@@ -121,7 +125,16 @@ final class BoardModel {
         if unseen > 0 { return .failures(unseen: unseen, running: live) }
         if live > 0 { return .running(live) }
         if problem != nil { return .problem }
-        return .ok
+        return latestFinishedPassedRecently ? .passed : .idle
+    }
+
+    /// The newest completed run (by when it finished) passed, and not too long ago.
+    var latestFinishedPassedRecently: Bool {
+        guard let latest = runs.filter({ !$0.isLive }).max(by: { $0.updatedAt < $1.updatedAt }) else {
+            return false
+        }
+        return latest.signal == .success
+            && now().timeIntervalSince(latest.updatedAt) < Self.recentSuccessWindow
     }
 
     // MARK: Actions

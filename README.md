@@ -45,7 +45,7 @@ The browser polls every 20s and **Refresh** forces a re-check of live and recent
 
 A native menu bar version lives in `mac/` (Swift, no Node server). It polls GitHub the same way as the server above.
 
-- **Menu bar icon.** Red `⚠ 2` for failures since you last opened the menu, `⟳ 3` while runs are live, a dimmed cloud when something is wrong (not signed in, rate limited, offline), and a quiet checkmark when all is well. Opening the menu clears the failure count.
+- **Menu bar icon.** A small pipeline, `■—■—●`, whose last stage shows the state: red `!` with a count for failures since you last opened the menu, blue `▶` with a count while runs are live, orange `!` on a dimmed pipeline when something is wrong (not signed in, rate limited, offline), a green check when the latest finished run passed in the last 24 hours, and a hollow ring when idle. Opening the menu clears the failure count.
 - **Notifications.** A run that turns failed posts one notification ("org/repo · CI failed on main"); clicking it opens the run. More than 3 at once become a single summary. Nothing is posted for failures that happened before launch.
 - **Menu.** New failures, running now and recent runs, plus the API budget left, Refresh, Open at login and Quit.
 - **Projects window.** Recent activity across all repos, then every repo with its latest status. Search, filter (All / Running / Failing), and each repo's recent runs.
@@ -68,9 +68,9 @@ If the menu bar is full, the icon can end up hidden behind the notch. Hold ⌘ a
 
 ### Debug mode
 
-`npm run mac:debug` rebuilds the app and relaunches it in debug mode. The icon gets an orange **DBG** tag and the menu gains a Debug section:
+`npm run mac:debug` rebuilds the app and relaunches it in debug mode (`mac/scripts/debug.sh failures` starts on a scenario: `idle`, `allGood`, `running`, `failures`, `busy`, `noToken`, `rateLimited`, `offline`). The icon gets an orange **DBG** tag and the menu gains a Debug section:
 
-- **Scenario**: live GitHub, or fixtures (all good, 3 running, 2 new failures, a busy board of 8 repos, and each problem: gh not signed in, rate limited, offline). Fixtures cost no API requests.
+- **Scenario**: live GitHub, or fixtures (idle, passed recently, 3 running, 2 new failures, a busy board of 8 repos, and each problem: gh not signed in, rate limited, offline). Fixtures cost no API requests.
 - **Start a run / Finish: pass / Finish: fail**: push a fake run through running → done, on top of any scenario, live included.
 - **Add 1 failure / Add 4 failures**: go through the real new-failure detection, so you get one notification, or the summary for more than 3.
 - **Test notification** posts one directly; **Forget seen** moves the seen marker back an hour so the badge comes back.

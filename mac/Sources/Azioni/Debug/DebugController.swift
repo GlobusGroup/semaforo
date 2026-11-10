@@ -24,7 +24,13 @@ final class DebugController {
     @ObservationIgnored private let model: BoardModel
     @ObservationIgnored private let notifier: any Notifying
 
-    init(source: DebugRunSource, model: BoardModel, notifier: any Notifying) {
+    /// `-debugScenario <name>` picks the scenario the first scan uses.
+    nonisolated static var launchScenario: DebugScenario {
+        UserDefaults.standard.string(forKey: "debugScenario").flatMap(DebugScenario.init(rawValue:)) ?? .live
+    }
+
+    init(source: DebugRunSource, model: BoardModel, notifier: any Notifying, scenario: DebugScenario = .live) {
+        self.scenario = scenario
         self.source = source
         self.model = model
         self.notifier = notifier

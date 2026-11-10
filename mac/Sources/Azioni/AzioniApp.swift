@@ -37,9 +37,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifier.requestAuthorization()
         let model: BoardModel
         if DebugController.isEnabled {
-            let source = DebugRunSource(live: RunStore())
+            // e.g. `open Azioni.app --args -debug YES -debugScenario failures`
+            let scenario = DebugController.launchScenario
+            let source = DebugRunSource(live: RunStore(), scenario: scenario)
             model = BoardModel(store: source, notifier: notifier)
-            debug = DebugController(source: source, model: model, notifier: notifier)
+            debug = DebugController(source: source, model: model, notifier: notifier, scenario: scenario)
         } else {
             model = BoardModel(notifier: notifier)
         }

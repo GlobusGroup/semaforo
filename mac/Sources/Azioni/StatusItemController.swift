@@ -78,41 +78,38 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         button.appearsDisabled = false
         button.imagePosition = .imageLeading
 
+        let count: (Int, NSColor) -> NSAttributedString = { n, color in
+            NSAttributedString(string: " \(n)", attributes: [.font: font, .foregroundColor: color])
+        }
+        button.attributedTitle = NSAttributedString()
         switch state {
         case let .failures(unseen, running):
-            button.image = Self.symbol("exclamationmark.triangle.fill", color: .systemRed)
-            let title = NSMutableAttributedString(
-                string: " \(unseen)",
-                attributes: [.font: font, .foregroundColor: NSColor.systemRed]
-            )
+            button.image = StatusIcon.image(.failed)
+            let title = NSMutableAttributedString(attributedString: count(unseen, .systemRed))
             if running > 0 {
                 title.append(NSAttributedString(
-                    string: "  ⟳ \(running)",
-                    attributes: [.font: font, .foregroundColor: NSColor.labelColor]
+                    string: "  ▶\u{FE0E}\(running)",
+                    attributes: [.font: font, .foregroundColor: NSColor.systemBlue]
                 ))
             }
             button.attributedTitle = title
             button.toolTip = "\(unseen) new failure\(unseen == 1 ? "" : "s")"
                 + (running > 0 ? ", \(running) running" : "")
-        case let .running(count):
-            button.image = Self.symbol("arrow.triangle.2.circlepath", color: .systemBlue)
-            button.attributedTitle = NSAttributedString(
-                string: " \(count)",
-                attributes: [.font: font, .foregroundColor: NSColor.labelColor]
-            )
-            button.toolTip = "\(count) running"
-        case .ok:
-            button.image = Self.symbol("checkmark.circle.fill", color: nil)
-            button.attributedTitle = NSAttributedString()
-            button.imagePosition = .imageOnly
-            button.toolTip = "Azioni: all good"
+        case let .running(n):
+            button.image = StatusIcon.image(.running)
+            button.attributedTitle = count(n, .labelColor)
+            button.toolTip = "\(n) running"
         case .problem:
-            // Orange rather than greyed out: a disabled-looking icon is easy to miss entirely.
-            button.image = Self.symbol("exclamationmark.icloud.fill", color: .systemOrange)
-            button.attributedTitle = NSAttributedString()
-            button.imagePosition = .imageOnly
+            button.image = StatusIcon.image(.problem)
             button.toolTip = model.problem ?? "Azioni can't reach GitHub"
+        case .passed:
+            button.image = StatusIcon.image(.passed)
+            button.toolTip = "Azioni: latest run passed"
+        case .idle:
+            button.image = StatusIcon.image(.idle)
+            button.toolTip = "Azioni: idle"
         }
+        if button.attributedTitle.length == 0 { button.imagePosition = .imageOnly }
         if debug != nil {
             // Tag the icon so a debug build is never mistaken for the real one.
             let title = NSMutableAttributedString(attributedString: button.attributedTitle)
@@ -125,19 +122,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.toolTip = "[debug] " + (button.toolTip ?? "")
         }
         button.setAccessibilityLabel(button.toolTip)
-    }
-
-    /// Coloured (non-template) when `color` is given, otherwise a template image that follows the menu bar.
-    private static func symbol(_ name: String, color: NSColor?) -> NSImage? {
-        guard let base = NSImage(systemSymbolName: name, accessibilityDescription: nil) else { return nil }
-        // 16pt semibold reads like the system's own menu extras; 14pt regular was too faint.
-        var config = NSImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
-        if let color {
-            config = config.applying(NSImage.SymbolConfiguration(paletteColors: [color]))
-        }
-        let image = base.withSymbolConfiguration(config) ?? base
-        image.isTemplate = color == nil
-        return image
     }
 
     // MARK: Popover
