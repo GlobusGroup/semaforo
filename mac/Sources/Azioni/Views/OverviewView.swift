@@ -46,7 +46,6 @@ private struct RepoCard: View {
         let naming = model.repoNaming
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                StatusDot(signal: repo.latest?.signal ?? .neutral, size: 10)
                 Button(action: showRepo) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(naming.name(repo.fullName)).font(.headline)
