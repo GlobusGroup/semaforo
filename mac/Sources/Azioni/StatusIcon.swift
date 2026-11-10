@@ -91,7 +91,7 @@ enum StatusIcon {
             return true
         }
         image.isTemplate = false
-        image.accessibilityDescription = "Azioni"
+        image.accessibilityDescription = "Semaforo"
         return image
     }
 }

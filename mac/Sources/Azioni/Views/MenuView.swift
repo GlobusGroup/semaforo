@@ -83,7 +83,7 @@ struct MenuView: View {
         var parts: [String] = []
         if running > 0 { parts.append("\(running) running") }
         if failures > 0 { parts.append("\(failures) new failure\(failures == 1 ? "" : "s")") }
-        if parts.isEmpty { return model.fetchedAt == nil ? "Azioni" : "All quiet" }
+        if parts.isEmpty { return model.fetchedAt == nil ? "Semaforo" : "All quiet" }
         return parts.joined(separator: " · ")
     }
 
@@ -139,7 +139,7 @@ private struct MenuFooter: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(action: openWindow) {
-                footerLabel("Open Azioni Window", systemImage: "macwindow")
+                footerLabel("Open Semaforo Window", systemImage: "macwindow")
             }
             .buttonStyle(MenuRowButtonStyle())
             .keyboardShortcut("o")
@@ -147,7 +147,7 @@ private struct MenuFooter: View {
             Button {
                 NSApp.terminate(nil)
             } label: {
-                footerLabel("Quit Azioni", systemImage: "xmark.circle")
+                footerLabel("Quit Semaforo", systemImage: "xmark.circle")
             }
             .buttonStyle(MenuRowButtonStyle())
             .keyboardShortcut("q")

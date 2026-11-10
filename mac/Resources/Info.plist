@@ -5,19 +5,19 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Azioni</string>
+	<string>Semaforo</string>
 	<key>CFBundleExecutable</key>
-	<string>Azioni</string>
+	<string>Semaforo</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.azioni.mac</string>
+	<string>com.globusgroup.semaforo</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Azioni</string>
+	<string>Semaforo</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -29,8 +29,14 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Azioni</string>
+	<string>Copyright © 2026 Globus Group</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/GlobusGroup/semaforo/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>tLhBq7UVjEost/Am82YSe2H6weE5OH08wZIqv5GpbKE=</string>
 </dict>
 </plist>

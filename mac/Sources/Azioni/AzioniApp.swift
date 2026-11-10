@@ -12,7 +12,7 @@ struct AzioniApp: App {
         // from views hosted outside a scene, like the status item's popover. A body with only a
         // never-inserted MenuBarExtra opens nothing at launch (a bare `Settings` scene does open its
         // window when launched unbundled) and still gives SwiftUI's standard main menu.
-        MenuBarExtra("Azioni", systemImage: "checkmark.circle", isInserted: .constant(false)) {
+        MenuBarExtra("Semaforo", systemImage: "checkmark.circle", isInserted: .constant(false)) {
             EmptyView()
         }
         .commands {
@@ -37,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifier.requestAuthorization()
         let model: BoardModel
         if DebugController.isEnabled {
-            // e.g. `open Azioni.app --args -debug YES -debugScenario failures`
+            // e.g. `open Semaforo.app --args -debug YES -debugScenario failures`
             let scenario = DebugController.launchScenario
             let source = DebugRunSource(live: RunStore(), scenario: scenario)
             model = BoardModel(store: source, notifier: notifier)
@@ -52,6 +52,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             projectsWindow?.show()
         }
         model.start()
+        // Creating it starts Sparkle, which then checks for updates on its own schedule.
+        _ = AppUpdater.shared
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

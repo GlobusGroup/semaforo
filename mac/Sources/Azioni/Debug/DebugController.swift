@@ -5,15 +5,15 @@ import Observation
 ///
 /// Turn it on with any of:
 ///   mac/scripts/debug.sh                                  (rebuilds and relaunches in debug mode)
-///   open /Applications/Azioni.app --args -debug YES      (one launch)
-///   defaults write com.azioni.mac debug -bool YES         (every launch; `defaults delete com.azioni.mac debug` to undo)
-///   AZIONI_DEBUG=1 swift run Azioni
+///   open /Applications/Semaforo.app --args -debug YES      (one launch)
+///   defaults write com.globusgroup.semaforo debug -bool YES         (every launch; `defaults delete com.globusgroup.semaforo debug` to undo)
+///   SEMAFORO_DEBUG=1 swift run Azioni
 @MainActor
 @Observable
 final class DebugController {
     nonisolated static var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: "debug")
-            || ProcessInfo.processInfo.environment["AZIONI_DEBUG"] == "1"
+            || ProcessInfo.processInfo.environment["SEMAFORO_DEBUG"] == "1"
     }
 
     private(set) var scenario: DebugScenario = .live
