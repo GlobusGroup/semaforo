@@ -118,7 +118,7 @@ private struct RepoSidebarRow: View {
                 Text("\(live)")
                     .font(.caption.monospacedDigit())
                     .padding(.horizontal, 5)
-                    .background(.blue.opacity(0.18), in: Capsule())
+                    .background(GitHubColor.pending.opacity(0.18), in: Capsule())
                     .help("\(live) running")
             }
         }
