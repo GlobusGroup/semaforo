@@ -126,12 +126,23 @@ private struct CardRunRow: View {
                     .lineLimit(1)
                 }
                 Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text(run.startedAt, format: .relative(presentation: .numeric, unitsStyle: .abbreviated))
-                    DurationText(run: run)
-                        .foregroundStyle(.secondary)
+                // GitHub's run-list style: calendar + "46 minutes ago", stopwatch + "1m 13s".
+                VStack(alignment: .leading, spacing: 3) {
+                    Label {
+                        Text(run.startedAt, format: .relative(presentation: .named, unitsStyle: .wide))
+                    } icon: {
+                        Image(systemName: "calendar")
+                    }
+                    Label {
+                        DurationText(run: run)
+                    } icon: {
+                        Image(systemName: "stopwatch")
+                    }
                 }
-                .font(.caption.monospacedDigit())
+                .labelStyle(MetaLabelStyle())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 128, alignment: .leading)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
@@ -147,6 +158,18 @@ private struct CardRunRow: View {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(run.htmlURL, forType: .string)
             }
+        }
+    }
+}
+
+/// Icon in a fixed-width column so the two lines' text lines up, as on GitHub.
+private struct MetaLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 5) {
+            configuration.icon
+                .frame(width: 14, alignment: .center)
+            configuration.title
+                .lineLimit(1)
         }
     }
 }

@@ -88,12 +88,12 @@ extension WorkflowRun {
 }
 
 enum RunFormat {
-    /// "42s", "3m 05s", "1h 02m".
+    /// GitHub style: "42s", "1m 13s", "1h 2m".
     static func duration(_ seconds: TimeInterval) -> String {
         let s = Int(seconds.rounded(.down))
         if s < 60 { return "\(s)s" }
-        if s < 3600 { return String(format: "%dm %02ds", s / 60, s % 60) }
-        return String(format: "%dh %02dm", s / 3600, (s % 3600) / 60)
+        if s < 3600 { return "\(s / 60)m \(s % 60)s" }
+        return "\(s / 3600)h \((s % 3600) / 60)m"
     }
 
     static func repoActionsURL(_ fullName: String) -> URL? {
