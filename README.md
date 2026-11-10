@@ -45,10 +45,10 @@ The browser polls every 20s and **Refresh** forces a re-check of live and recent
 
 A native menu bar version lives in `mac/` (Swift, no Node server). It polls GitHub the same way as the server above.
 
-- **Menu bar icon.** A small pipeline, `■—■—●`, whose last stage shows the state: red `!` with a count for failures since you last opened the menu, blue `▶` with a count while runs are live, orange `!` on a dimmed pipeline when something is wrong (not signed in, rate limited, offline), a green check when the latest finished run passed in the last 24 hours, and a hollow ring when idle. Opening the menu clears the failure count.
+- **Menu bar icon.** A small pipeline, `■—■—●`, whose last stage shows the state: red cross with a count for failures since you last opened the menu, an amber in-progress ring with a count while runs are live, grey `!` on a dimmed pipeline when something is wrong (not signed in, rate limited, offline), a green check when the latest finished run passed in the last 24 hours, and a hollow ring when idle. Opening the menu clears the failure count.
 - **Notifications.** A run that turns failed posts one notification ("org/repo · CI failed on main"); clicking it opens the run. More than 3 at once become a single summary. Nothing is posted for failures that happened before launch.
-- **Menu.** New failures, running now and recent runs, plus the API budget left, Refresh, Open at login and Quit.
-- **Projects window.** Recent activity across all repos, then every repo with its latest status. Search, filter (All / Running / Failing), and each repo's recent runs.
+- **Menu.** New failures, running now and recent runs from the last 24 hours, plus Open Azioni Window and Quit.
+- **Projects window.** Opens on every repo active in the last 24 hours as a card with its latest runs, most recent first. Also a flat Recent activity list and per-repo views, with search and a filter (All / Running / Failing). The gear (⌘,) opens Settings: Open at login, Refresh Now, last update and API budget.
 
 Requirements:
 

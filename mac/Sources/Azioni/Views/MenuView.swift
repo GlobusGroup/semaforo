@@ -1,4 +1,3 @@
-import ServiceManagement
 import SwiftUI
 
 /// Content of the status item's popover.
@@ -45,7 +44,7 @@ struct MenuView: View {
                     section("Recent", runs: recent, limit: Self.maxRecent)
                 }
                 if failures.isEmpty && running.isEmpty && recent.isEmpty {
-                    Text(model.fetchedAt == nil ? "Loading workflow runs…" : "No recent workflow runs")
+                    Text(model.fetchedAt == nil ? "Loading workflow runs…" : "No workflow runs in the last 24 hours")
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
@@ -131,13 +130,11 @@ private struct ProblemBanner: View {
     }
 }
 
+/// Just the two things you do from the menu; refresh, login item and API budget live in the
+/// window's Settings.
 private struct MenuFooter: View {
-    @Environment(BoardModel.self) private var model
     var dismiss: @MainActor () -> Void
     var openWindow: @MainActor () -> Void
-
-    @State private var openAtLogin = SMAppService.mainApp.status == .enabled
-    @State private var loginError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -148,48 +145,6 @@ private struct MenuFooter: View {
             .keyboardShortcut("o")
 
             Button {
-                Task { await model.refresh() }
-            } label: {
-                HStack {
-                    footerLabel("Refresh", systemImage: "arrow.clockwise")
-                    if model.isRefreshing {
-                        ProgressView().controlSize(.small)
-                    }
-                }
-            }
-            .buttonStyle(MenuRowButtonStyle())
-            .disabled(model.isRefreshing)
-            .keyboardShortcut("r")
-
-            if let budget = budgetText {
-                HStack {
-                    footerLabel("API budget", systemImage: "gauge.with.dots.needle.33percent")
-                    Spacer()
-                    Text(budget).monospacedDigit().foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 5)
-            }
-
-            Toggle(isOn: Binding(get: { openAtLogin }, set: setOpenAtLogin)) {
-                footerLabel("Open at Login", systemImage: "power")
-            }
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 5)
-            if let loginError {
-                Text(loginError)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 4)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Divider().padding(.vertical, 4)
-
-            Button {
                 NSApp.terminate(nil)
             } label: {
                 footerLabel("Quit Azioni", systemImage: "xmark.circle")
@@ -197,34 +152,11 @@ private struct MenuFooter: View {
             .buttonStyle(MenuRowButtonStyle())
             .keyboardShortcut("q")
         }
-        .onAppear { openAtLogin = SMAppService.mainApp.status == .enabled }
-    }
-
-    private var budgetText: String? {
-        guard let rate = model.sync?.rateLimit else { return nil }
-        return "\(rate.remaining.formatted()) / \(rate.limit.formatted()) left"
     }
 
     private func footerLabel(_ title: String, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
             .labelStyle(MenuLabelStyle())
-    }
-
-    private func setOpenAtLogin(_ enabled: Bool) {
-        let service = SMAppService.mainApp
-        do {
-            if enabled {
-                try service.register()
-            } else {
-                try service.unregister()
-            }
-            loginError = service.status == .requiresApproval
-                ? "Approve Azioni in System Settings › General › Login Items."
-                : nil
-        } catch {
-            loginError = "Couldn't change login item: \(error.localizedDescription)"
-        }
-        openAtLogin = service.status == .enabled || service.status == .requiresApproval
     }
 }
 

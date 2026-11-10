@@ -1,6 +1,41 @@
 import SwiftUI
 
 /// Live-ticking or fixed duration text for a run.
+/// "7 minutes ago" that keeps counting. `Text(date, format: .relative)` doesn't: SwiftUI sees the
+/// same date and format on every tick and skips the redraw, so labels froze at first draw. Here the
+/// string is built against the timeline's own clock, so it actually changes.
+struct RelativeTime: View {
+    enum Style { case wide, short, narrow }
+
+    var date: Date
+    var style: Style = .wide
+
+    var body: some View {
+        // Seconds matter while it's recent; after an hour, once a minute is plenty.
+        let interval: TimeInterval = Date().timeIntervalSince(date) < 3600 ? 1 : 60
+        TimelineView(.periodic(from: .now, by: interval)) { context in
+            Text(Self.string(date, relativeTo: context.date, style: style))
+        }
+    }
+
+    static func string(_ date: Date, relativeTo now: Date, style: Style) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        switch style {
+        case .wide:
+            formatter.unitsStyle = .full
+            formatter.dateTimeStyle = .named
+        case .short:
+            formatter.unitsStyle = .abbreviated
+            formatter.dateTimeStyle = .numeric
+        case .narrow:
+            formatter.unitsStyle = .short
+            formatter.dateTimeStyle = .numeric
+        }
+        return formatter.localizedString(for: min(date, now), relativeTo: now)
+    }
+}
+
 struct DurationText: View {
     var run: WorkflowRun
 
@@ -63,7 +98,8 @@ struct RunRow: View {
         if run.isLive {
             DurationText(run: run)
         } else {
-            Text(run.updatedAt, format: .relative(presentation: .numeric, unitsStyle: .narrow))
+            // Start time, as GitHub's run list shows it (updated_at moves after a run finishes).
+            RelativeTime(date: run.startedAt, style: .narrow)
         }
     }
 }

@@ -418,3 +418,11 @@ func makeModel(
     let run = makeRun(id: 1, repo: "GlobusGroup/craft", conclusion: "failure")
     #expect(Notifier.title(for: run, naming: shared) == "craft · CI failed on main")
 }
+
+@Test func relativeTimeMovesWithTheClock() {
+    let start = Date(timeIntervalSince1970: 1_000_000)
+    let a = RelativeTime.string(start, relativeTo: start.addingTimeInterval(10 * 60), style: .wide)
+    let b = RelativeTime.string(start, relativeTo: start.addingTimeInterval(11 * 60), style: .wide)
+    #expect(a == "10 minutes ago")
+    #expect(b == "11 minutes ago")
+}

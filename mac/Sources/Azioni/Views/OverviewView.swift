@@ -16,9 +16,9 @@ struct OverviewDetail: View {
                 ContentUnavailableView("Can't reach GitHub", systemImage: "exclamationmark.icloud", description: Text(problem))
             } else if repos.isEmpty {
                 ContentUnavailableView(
-                    loaded ? "No repositories" : "Loading…",
+                    loaded ? "Nothing in the last 24 hours" : "Loading…",
                     systemImage: loaded ? "tray" : "hourglass",
-                    description: Text(loaded ? "No repositories match." : "Fetching workflow runs from GitHub.")
+                    description: Text(loaded ? "No workflow runs started in the last 24 hours match." : "Fetching workflow runs from GitHub.")
                 )
             } else {
                 ScrollView {
@@ -33,7 +33,7 @@ struct OverviewDetail: View {
             }
         }
         .navigationTitle("All repositories")
-        .navigationSubtitle(loaded ? "\(repos.count) repositor\(repos.count == 1 ? "y" : "ies") · latest change first" : "Loading…")
+        .navigationSubtitle(loaded ? "\(repos.count) repositor\(repos.count == 1 ? "y" : "ies") active in the last 24 hours" : "Loading…")
     }
 }
 
@@ -69,7 +69,7 @@ private struct RepoCard: View {
                         .background(.blue.opacity(0.15), in: Capsule())
                 }
                 Spacer(minLength: 8)
-                Text(repo.lastChange, format: .relative(presentation: .numeric, unitsStyle: .abbreviated))
+                RelativeTime(date: repo.lastChange, style: .short)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button {
@@ -129,7 +129,7 @@ private struct CardRunRow: View {
                 // GitHub's run-list style: calendar + "46 minutes ago", stopwatch + "1m 13s".
                 VStack(alignment: .leading, spacing: 3) {
                     Label {
-                        Text(run.startedAt, format: .relative(presentation: .named, unitsStyle: .wide))
+                        RelativeTime(date: run.startedAt)
                     } icon: {
                         Image(systemName: "calendar")
                     }

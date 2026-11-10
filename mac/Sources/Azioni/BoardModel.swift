@@ -38,6 +38,8 @@ final class BoardModel {
     static let pollInterval: Duration = .seconds(20)
     static let lastSeenKey = "lastSeenAt"
     static let recentLimit = 8
+    /// Runs older than this are hidden from the menu and window (live runs always show).
+    static let visibleWindow: TimeInterval = 24 * 60 * 60
     /// How long a passing run keeps the green check on the icon.
     static let recentSuccessWindow: TimeInterval = 24 * 60 * 60
 
@@ -94,14 +96,20 @@ final class BoardModel {
     /// Running or queued runs.
     var liveRuns: [WorkflowRun] { runs.filter(\.isLive) }
 
-    /// Latest ~8 runs.
-    var recentRuns: [WorkflowRun] { Array(runs.prefix(Self.recentLimit)) }
+    /// What the menu and window list: runs started in the last 24 hours, plus anything live.
+    var visibleRuns: [WorkflowRun] {
+        let cutoff = now().addingTimeInterval(-Self.visibleWindow)
+        return runs.filter { $0.isLive || $0.startedAt >= cutoff }
+    }
 
-    /// Every repo with runs, sorted by latest activity.
+    /// Latest ~8 runs.
+    var recentRuns: [WorkflowRun] { Array(visibleRuns.prefix(Self.recentLimit)) }
+
+    /// Every repo with a visible run, sorted by latest activity.
     var repos: [RepoSummary] {
         var order: [String] = []
         var grouped: [String: [WorkflowRun]] = [:]
-        for run in runs {
+        for run in visibleRuns {
             if grouped[run.repoFullName] == nil { order.append(run.repoFullName) }
             grouped[run.repoFullName, default: []].append(run)
         }

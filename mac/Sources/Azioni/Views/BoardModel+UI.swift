@@ -46,7 +46,7 @@ extension BoardModel {
     /// "Recent activity": every run, newest first.
     func activity(filter: RunFilter, search: String) -> [WorkflowRun] {
         let query = search.trimmingCharacters(in: .whitespaces)
-        return runs
+        return visibleRuns
             .filter { filter.matches($0) && (query.isEmpty || $0.matches(query)) }
             .sorted { $0.startedAt > $1.startedAt }
     }
@@ -97,9 +97,10 @@ extension BoardModel {
 }
 
 extension RepoSummary {
-    /// When anything last happened in this repo: the latest run start or finish.
+    /// When this repo last had a run start. Not `updated_at`: GitHub bumps that after a run
+    /// finishes (logs, artifacts), which made quiet repos jump to the top.
     var lastChange: Date {
-        runs.map { max($0.updatedAt, $0.startedAt) }.max() ?? .distantPast
+        runs.map(\.startedAt).max() ?? .distantPast
     }
 }
 

@@ -12,6 +12,7 @@ struct ProjectsView: View {
     @State private var selection: SidebarItem? = .overview
     @State private var search = ""
     @State private var filter: RunFilter = .all
+    @State private var showSettings = false
 
     var body: some View {
         NavigationSplitView {
@@ -32,6 +33,18 @@ struct ProjectsView: View {
                 .help("Check GitHub for new runs now")
                 .keyboardShortcut("r", modifiers: .command)
             }
+            ToolbarItem {
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .help("Settings")
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView().environment(model)
         }
     }
 
