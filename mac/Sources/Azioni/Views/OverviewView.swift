@@ -104,8 +104,7 @@ private struct CardRunRow: View {
     var body: some View {
         Button { run.open() } label: {
             HStack(spacing: 8) {
-                StatusLabel(signal: run.signal)
-                    .frame(width: 78, alignment: .leading)
+                GitHubStatusIcon(run: run)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(run.displayTitle)
                         .lineLimit(1)

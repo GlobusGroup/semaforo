@@ -2,12 +2,12 @@ import SwiftUI
 
 extension Signal {
     var color: Color {
+        // GitHub's palette, so dots agree with GitHubStatusIcon.
         switch self {
-        case .running: .blue
-        case .queued: .orange
-        case .success: .green
-        case .failure: .red
-        case .cancelled, .neutral: .gray
+        case .running, .queued: GitHubColor.pending
+        case .success: GitHubColor.success
+        case .failure: GitHubColor.failure
+        case .cancelled, .neutral: GitHubColor.neutral
         }
     }
 }

@@ -177,8 +177,8 @@ struct RunsTable: View {
 
     var body: some View {
         Table(runs, selection: $selection) {
-            TableColumn("Status") { run in StatusLabel(signal: run.signal) }
-                .width(min: 70, ideal: 85, max: 110)
+            TableColumn("") { run in GitHubStatusIcon(run: run, size: 14) }
+                .width(18)
             // `if` inside a TableColumnBuilder needs macOS 14.4; hide the column instead.
             TableColumn("Repository") { run in Text(run.repoFullName).help(run.repoFullName) }
                 .width(min: 100, ideal: 170)
