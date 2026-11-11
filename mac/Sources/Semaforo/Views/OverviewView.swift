@@ -2,6 +2,7 @@ import SwiftUI
 
 /// "All repositories": one card per repo, most recently changed first, each with its latest runs.
 struct OverviewDetail: View {
+    @Environment(BoardModel.self) private var model
     var repos: [RepoSummary]
     var loaded: Bool
     var problem: String?
@@ -24,17 +25,18 @@ struct OverviewDetail: View {
             } else {
                 GeometryReader { geo in
                     let count = max(1, Int((geo.size.width - 32 + Self.spacing) / (Self.minColumnWidth + Self.spacing)))
+                    // With "Watched repositories", the ones you watch get their own group on top,
+                    // as in the sidebar.
+                    let split = model.notifyScope == .watched
+                    let watched = split ? repos.filter { model.notifies($0.fullName) } : []
+                    let others = split ? repos.filter { !model.notifies($0.fullName) } : repos
                     ScrollView {
-                        // Masonry: a grid makes every row as tall as its tallest card, which leaves
-                        // holes under short cards. Columns that stack independently don't.
-                        HStack(alignment: .top, spacing: Self.spacing) {
-                            ForEach(Array(Self.columns(repos, count: count).enumerated()), id: \.offset) { _, column in
-                                LazyVStack(spacing: Self.spacing) {
-                                    ForEach(column) { repo in
-                                        RepoCard(repo: repo, showRepo: { showRepo(repo.fullName) })
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .top)
+                        VStack(alignment: .leading, spacing: 18) {
+                            if !watched.isEmpty {
+                                group("Watched", watched, columns: count)
+                                if !others.isEmpty { group("Other", others, columns: count) }
+                            } else {
+                                group(nil, others, columns: count)
                             }
                         }
                         .padding(16)
@@ -49,6 +51,30 @@ struct OverviewDetail: View {
 }
 
 extension OverviewDetail {
+    /// One titled group of cards in masonry columns: a grid makes every row as tall as its tallest
+    /// card, which leaves holes under short cards. Columns that stack independently don't.
+    @ViewBuilder
+    func group(_ title: String?, _ repos: [RepoSummary], columns count: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 2)
+            }
+            HStack(alignment: .top, spacing: Self.spacing) {
+                ForEach(Array(Self.columns(repos, count: count).enumerated()), id: \.offset) { _, column in
+                    LazyVStack(spacing: Self.spacing) {
+                        ForEach(column) { repo in
+                            RepoCard(repo: repo, showRepo: { showRepo(repo.fullName) })
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .top)
+                }
+            }
+        }
+    }
+
     /// Deals cards, in order, onto whichever column is shortest so far. Height is estimated from the
     /// run count (header ≈ 1.2 rows), so the newest repos stay at the top, left to right.
     static func columns(_ repos: [RepoSummary], count: Int) -> [[RepoSummary]] {
@@ -96,10 +122,9 @@ private struct RepoCard: View {
                 }
                 Spacer(minLength: 8)
                 // Controls appear on hover. They stay in the layout (just transparent) so the
-                // header never changes height; a watched repo keeps its bell visible as a marker.
-                let watched = model.notifyScope == .watched && model.notifies(repo.fullName)
+                // header never changes height. Which repos are watched shows in the groups.
                 NotifyBell(repoFullName: repo.fullName)
-                    .opacity(hovering || watched ? 1 : 0)
+                    .opacity(hovering ? 1 : 0)
                 Button {
                     if let url = RunFormat.repoActionsURL(repo.fullName) { NSWorkspace.shared.open(url) }
                 } label: {
