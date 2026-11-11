@@ -71,6 +71,8 @@ If the menu bar is full, the icon can end up hidden behind the notch. Hold ⌘ a
 
 ### Sharing the app
 
+Step-by-step for shipping an update: [mac/RELEASING.md](mac/RELEASING.md). This section covers what the release does and the one-time setup.
+
 `npm run mac:release -- 0.2.0` builds a universal (Apple silicon + Intel) app, signs it with a Developer ID certificate, notarises and staples it, and publishes it as a GitHub release that installed copies update from. Add `--dry-run` to build, notarise and write the appcast without committing or publishing anything.
 
 It sets the version in `mac/Resources/Info.plist`, bumps the build number, commits that as "mac: release 0.2.0", tags `v0.2.0` and pushes. The release carries `Semaforo.zip` and an `appcast.xml`. Release notes default to the commit subjects since the last tag; pass `--notes-file <path>` to write your own.
@@ -84,7 +86,7 @@ It needs these set up once:
 3. The update signing key. After one `swift build` in `mac/`, run `.build/artifacts/sparkle/Sparkle/bin/generate_keys --account azioni` and put the public key it prints in `Info.plist` as `SUPublicEDKey`. (The key is labelled `azioni`, the app's old name; the label is only how the keychain finds it.) The private key stays in your login keychain; back it up with `generate_keys --account azioni -x <file>`. Losing it means installed copies can't update.
 4. The GitHub repo named in `SUFeedURL` (`GlobusGroup/semaforo`), public (Sparkle can't sign in), and set as this checkout's `origin`.
 
-Until then, `mac/scripts/build-app.sh --universal` makes an app signed but not notarised. On another Mac it opens after System Settings › Privacy & Security › Open Anyway.
+Until steps 1 and 2 are done, release with `--skip-notarize` (see RELEASING.md): installed copies still update, and a fresh download opens after System Settings › Privacy & Security › Open Anyway.
 
 Whoever runs it also needs the GitHub CLI signed in (`gh auth login`) with access to the repos.
 
