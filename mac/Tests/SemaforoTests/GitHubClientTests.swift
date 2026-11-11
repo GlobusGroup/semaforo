@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Azioni
+@testable import Semaforo
 
 @Suite struct GitHubClientTests {
     @Test func parsesNextLink() {
@@ -112,7 +112,7 @@ import Testing
 @Test func processRunnerCollectsOutput() async throws {
     let ok = try await GhCLIToken.run("/bin/sh", ["-c", "echo token; echo oops >&2"])
     #expect(ok == GhCLIToken.ProcessResult(status: 0, stdout: "token\n", stderr: "oops\n"))
-    let missing = try await GhCLIToken.run("/bin/zsh", ["-fc", "definitely-not-a-command-azioni"])
+    let missing = try await GhCLIToken.run("/bin/zsh", ["-fc", "definitely-not-a-command-semaforo"])
     #expect(missing.status == 127)
 }
 

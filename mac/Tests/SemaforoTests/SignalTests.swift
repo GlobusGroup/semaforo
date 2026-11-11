@@ -1,5 +1,5 @@
 import Testing
-@testable import Azioni
+@testable import Semaforo
 
 @Test func signalMapping() {
     #expect(Signal.success.label == "Passed")

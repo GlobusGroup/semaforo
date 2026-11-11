@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Azioni
+@testable import Semaforo
 
 @MainActor
 private final class RecordingNotifier: Notifying {

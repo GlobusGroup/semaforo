@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Azioni
+@testable import Semaforo
 
 // MARK: Fakes
 
@@ -78,7 +78,7 @@ func snapshot(_ runs: [WorkflowRun], rateLimitedUntil: Date? = nil) -> RunsSnaps
 }
 
 func freshDefaults() -> UserDefaults {
-    let name = "azioni-tests-\(UUID().uuidString)"
+    let name = "semaforo-tests-\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: name)!
     defaults.removePersistentDomain(forName: name)
     return defaults

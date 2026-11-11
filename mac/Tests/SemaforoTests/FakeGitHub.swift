@@ -1,5 +1,5 @@
 import Foundation
-@testable import Azioni
+@testable import Semaforo
 
 /// A thread-safe, manually advanced clock shared by the fake server and the code under test.
 final class FakeClock: @unchecked Sendable {

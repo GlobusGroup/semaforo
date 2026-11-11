@@ -7,7 +7,7 @@ import Observation
 ///   mac/scripts/debug.sh                                  (rebuilds and relaunches in debug mode)
 ///   open /Applications/Semaforo.app --args -debug YES      (one launch)
 ///   defaults write com.globusgroup.semaforo debug -bool YES         (every launch; `defaults delete com.globusgroup.semaforo debug` to undo)
-///   SEMAFORO_DEBUG=1 swift run Azioni
+///   SEMAFORO_DEBUG=1 swift run Semaforo
 @MainActor
 @Observable
 final class DebugController {

@@ -24,6 +24,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         item.autosaveName = StatusItemController.autosaveName
         return item
     }()
+    // Keeps its old name: it is the key macOS stores the icon's menu bar position under.
     private static let autosaveName = "AzioniStatusItem"
     private let popover = NSPopover()
     private let session = MenuSession()

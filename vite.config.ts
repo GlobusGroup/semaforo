@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { azioniApiPlugin } from './server/azioniPlugin.ts'
+import { semaforoApiPlugin } from './server/semaforoPlugin.ts'
 
 export default defineConfig({
-  plugins: [react(), azioniApiPlugin()],
+  plugins: [react(), semaforoApiPlugin()],
   server: {
     host: '127.0.0.1',
     port: 3106,

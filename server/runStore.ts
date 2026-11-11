@@ -173,7 +173,7 @@ export class RunStore {
           repo.error = null
         } else {
           repo.error = e.message
-          console.warn(`[azioni] ${repo.fullName}:`, e.message)
+          console.warn(`[semaforo] ${repo.fullName}:`, e.message)
         }
       }
       repo.checkedAt = Date.now()

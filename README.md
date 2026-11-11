@@ -1,4 +1,4 @@
-# Azioni
+# Semaforo
 
 Local status board for GitHub Actions. Scans repos you can access via the GitHub CLI, lists recent workflow runs, and sorts them by `run_started_at`.
 
@@ -44,7 +44,7 @@ The browser polls every 20s and **Refresh** forces a re-check of live and recent
 
 ## Mac app
 
-A native menu bar version, **Semaforo**, lives in `mac/` (Swift, no Node server; the Swift package is still named Azioni). It polls GitHub the same way as the server above.
+A native menu bar version lives in `mac/` (Swift, no Node server). It polls GitHub the same way as the server above.
 
 - **Menu bar icon.** A small pipeline, `■—■—●`, whose last stage shows the state: red cross with a count for failures since you last opened the menu, an amber in-progress ring with a count while runs are live, grey `!` on a dimmed pipeline when something is wrong (not signed in, rate limited, offline), a green check when the latest finished run passed in the last 24 hours, and a hollow ring when idle. Opening the menu clears the failure count.
 - **Notifications.** A run that turns failed posts one notification ("org/repo · CI failed on main"); clicking it opens the run. More than 3 at once become a single summary. Nothing is posted for failures that happened before launch. Settings › Notifications chooses which repos notify: watched (default), all, or off. You watch a repo with the bell on its card or repo toolbar, or Watch in the sidebar's right-click menu; until you watch one, nothing notifies. The same choice applies to the red failure count on the icon and the menu's New failures list.

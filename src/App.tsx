@@ -115,7 +115,7 @@ export default function App() {
         <div className="empty-state empty-state--board" role="status">
           <p className="empty-state__title">No recent workflow runs</p>
           <p className="empty-state__body">
-            Azioni scanned {data?.repo_count ?? 0} repos and found nothing in the latest five runs
+            Semaforo scanned {data?.repo_count ?? 0} repos and found nothing in the latest five runs
             per repository. Trigger a workflow, then refresh.
           </p>
         </div>
@@ -138,7 +138,7 @@ export default function App() {
 
       <footer className="site-footer">
         <p>
-          Azioni · local only · data via GitHub CLI · auto-refresh every {POLL_MS / 1000}s
+          Semaforo · local only · data via GitHub CLI · auto-refresh every {POLL_MS / 1000}s
         </p>
       </footer>
     </div>

@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Azioni",
+    name: "Semaforo",
     platforms: [.macOS(.v14)],
     dependencies: [
         // Self-updates for the shared app; see scripts/release.sh.
@@ -10,16 +10,16 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "Azioni",
+            name: "Semaforo",
             dependencies: [.product(name: "Sparkle", package: "Sparkle")],
-            path: "Sources/Azioni",
-            // build-app.sh copies Sparkle.framework into Azioni.app/Contents/Frameworks.
+            path: "Sources/Semaforo",
+            // build-app.sh copies Sparkle.framework into Semaforo.app/Contents/Frameworks.
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .testTarget(
-            name: "AzioniTests",
-            dependencies: ["Azioni"],
-            path: "Tests/AzioniTests"
+            name: "SemaforoTests",
+            dependencies: ["Semaforo"],
+            path: "Tests/SemaforoTests"
         ),
     ]
 )

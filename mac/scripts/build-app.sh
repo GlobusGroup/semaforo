@@ -25,7 +25,7 @@ app="$mac_dir/build/$app_name.app"
 echo "==> swift build -c release ${arch_flags[*]:-}"
 (cd "$mac_dir" && swift build -c release ${arch_flags[@]+"${arch_flags[@]}"})
 bin_dir="$(cd "$mac_dir" && swift build -c release ${arch_flags[@]+"${arch_flags[@]}"} --show-bin-path)"
-binary="$bin_dir/Azioni"  # the Swift package is still called Azioni
+binary="$bin_dir/Semaforo"
 [[ -x "$binary" ]] || { echo "error: no executable at $binary" >&2; exit 1; }
 
 echo "==> assembling $app"

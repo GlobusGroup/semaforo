@@ -21,7 +21,7 @@ export function Masthead({
     <header className="masthead">
       <div className="masthead__brand">
         <p className="masthead__eyebrow">Local · GitHub CLI</p>
-        <h1 className="masthead__title">Azioni</h1>
+        <h1 className="masthead__title">Semaforo</h1>
         <p className="masthead__lede">
           Workflow runs across your repos, newest start first.
         </p>

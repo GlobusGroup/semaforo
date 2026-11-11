@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Azioni
+@testable import Semaforo
 
 @Suite struct RunStoreTests {
     @Test func firstScanTiersAndCounts() async throws {

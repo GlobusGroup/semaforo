@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @main
-struct AzioniApp: App {
+struct SemaforoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
