@@ -121,11 +121,11 @@ private struct RepoSidebarRow: View {
                     .background(GitHubColor.pending.opacity(0.18), in: Capsule())
                     .help("\(live) running")
             }
-            if model.notifyScope == .selected, model.notifies(repo.fullName) {
+            if model.notifyScope == .watched, model.notifies(repo.fullName) {
                 Image(systemName: "bell.fill")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .help("Notifies about failures")
+                    .help("Watching: notifies about failures")
             }
         }
         .help(repo.fullName)

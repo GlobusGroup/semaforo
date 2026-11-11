@@ -40,7 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // e.g. `open Semaforo.app --args -debug YES -debugScenario failures`
             let scenario = DebugController.launchScenario
             let source = DebugRunSource(live: RunStore(), scenario: scenario)
-            model = BoardModel(store: source, notifier: notifier)
+            // Debug scenarios are about seeing failures, so every repo counts unless Settings says otherwise.
+            model = BoardModel(store: source, notifier: notifier, defaultNotifyScope: .all)
             debug = DebugController(source: source, model: model, notifier: notifier, scenario: scenario)
         } else {
             model = BoardModel(notifier: notifier)

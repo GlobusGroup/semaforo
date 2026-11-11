@@ -17,7 +17,7 @@ struct DebugModeTests {
         let notifier = RecordingNotifier()
         // Launched a minute ago, so runs stamped "now" are after launch and after lastSeenAt.
         let launch = Date().addingTimeInterval(-60)
-        let model = BoardModel(store: source, notifier: notifier, defaults: defaults, now: { launch })
+        let model = BoardModel(store: source, notifier: notifier, defaults: defaults, now: { launch }, defaultNotifyScope: .all)
         return (model, source, notifier)
     }
 

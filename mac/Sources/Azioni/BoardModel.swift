@@ -19,8 +19,8 @@ enum IconState: Equatable, Sendable {
 enum NotificationScope: String, CaseIterable, Identifiable, Sendable {
     /// Every repo (the original behaviour).
     case all
-    /// Only repos in `BoardModel.notifyRepos`.
-    case selected
+    /// Only repos you watch (`BoardModel.notifyRepos`). Stored as "selected", its old name.
+    case watched = "selected"
     /// Never.
     case off
 
@@ -29,7 +29,7 @@ enum NotificationScope: String, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .all: "All repositories"
-        case .selected: "Selected repositories"
+        case .watched: "Watched repositories"
         case .off: "Off"
         }
     }
@@ -76,7 +76,7 @@ final class BoardModel {
     var notifyScope: NotificationScope {
         didSet { defaults.set(notifyScope.rawValue, forKey: Self.notifyScopeKey) }
     }
-    /// Full names ("org/repo") that notify when the scope is `.selected`; persisted.
+    /// Full names ("org/repo") you watch: they notify when the scope is `.watched`; persisted.
     private(set) var notifyRepos: Set<String>
 
     /// When this model was created; failures older than this never notify.
@@ -97,7 +97,8 @@ final class BoardModel {
         notifier: any Notifying = Notifier(),
         defaults: UserDefaults = .standard,
         now: @escaping @Sendable () -> Date = { Date() },
-        pollInterval: Duration = BoardModel.pollInterval
+        pollInterval: Duration = BoardModel.pollInterval,
+        defaultNotifyScope: NotificationScope = .watched
     ) {
         self.store = store
         self.notifier = notifier
@@ -112,7 +113,7 @@ final class BoardModel {
             lastSeenAt = launch
             defaults.set(launch, forKey: Self.lastSeenKey)
         }
-        notifyScope = defaults.string(forKey: Self.notifyScopeKey).flatMap(NotificationScope.init) ?? .all
+        notifyScope = defaults.string(forKey: Self.notifyScopeKey).flatMap(NotificationScope.init) ?? defaultNotifyScope
         notifyRepos = Set(defaults.stringArray(forKey: Self.notifyReposKey) ?? [])
     }
 
@@ -122,12 +123,12 @@ final class BoardModel {
     func notifies(_ repoFullName: String) -> Bool {
         switch notifyScope {
         case .all: true
-        case .selected: notifyRepos.contains(repoFullName)
+        case .watched: notifyRepos.contains(repoFullName)
         case .off: false
         }
     }
 
-    /// Adds or removes a repo from the selected set (used when the scope is `.selected`).
+    /// Watches or unwatches a repo (used when the scope is `.watched`).
     func setNotifies(_ enabled: Bool, for repoFullName: String) {
         if enabled { notifyRepos.insert(repoFullName) } else { notifyRepos.remove(repoFullName) }
         defaults.set(notifyRepos.sorted(), forKey: Self.notifyReposKey)

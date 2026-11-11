@@ -91,7 +91,7 @@ func makeModel(
     defaults: UserDefaults = freshDefaults(),
     notifier: FakeNotifier = FakeNotifier()
 ) -> BoardModel {
-    BoardModel(store: source, notifier: notifier, defaults: defaults, now: { clock.now })
+    BoardModel(store: source, notifier: notifier, defaults: defaults, now: { clock.now }, defaultNotifyScope: .all)
 }
 
 // MARK: Seen model
@@ -262,14 +262,14 @@ func makeModel(
 
     @Test func selectedOnlyPostsChosenRepos() async {
         let posted = await postedRepos {
-            $0.notifyScope = .selected
+            $0.notifyScope = .watched
             $0.setNotifies(true, for: "org/mine")
         }
         #expect(posted == [["org/mine"]])
     }
 
     @Test func selectedWithNothingChosenPostsNothing() async {
-        #expect(await postedRepos { $0.notifyScope = .selected } == [])
+        #expect(await postedRepos { $0.notifyScope = .watched } == [])
     }
 
     @Test func offPostsNothing() async {
@@ -288,7 +288,7 @@ func makeModel(
         await model.refresh()
         #expect(model.iconState == .failures(unseen: 2, running: 0))
 
-        model.notifyScope = .selected
+        model.notifyScope = .watched
         model.setNotifies(true, for: "org/mine")
         #expect(model.unseenFailures.map(\.repoFullName) == ["org/mine"])
         #expect(model.iconState == .failures(unseen: 1, running: 0))
@@ -305,13 +305,13 @@ func makeModel(
     @Test func choicesPersist() {
         let defaults = freshDefaults()
         let first = makeModel(FakeRunSource(), defaults: defaults)
-        first.notifyScope = .selected
+        first.notifyScope = .watched
         first.setNotifies(true, for: "org/a")
         first.setNotifies(true, for: "org/b")
         first.setNotifies(false, for: "org/a")
 
         let second = makeModel(FakeRunSource(), defaults: defaults)
-        #expect(second.notifyScope == .selected)
+        #expect(second.notifyScope == .watched)
         #expect(second.notifyRepos == ["org/b"])
         #expect(second.notifies("org/b"))
         #expect(!second.notifies("org/a"))
@@ -467,7 +467,7 @@ func makeModel(
         let model = BoardModel(
             store: source, notifier: FakeNotifier(), defaults: freshDefaults(),
             now: { t0 }, pollInterval: .seconds(3600)
-        )
+        , defaultNotifyScope: .all)
         model.start()
         model.start()
         for _ in 0..<200 where model.runs.isEmpty {
@@ -509,4 +509,15 @@ func makeModel(
     let b = RelativeTime.string(start, relativeTo: start.addingTimeInterval(11 * 60), style: .wide)
     #expect(a == "10 minutes ago")
     #expect(b == "11 minutes ago")
+}
+
+@MainActor @Test func defaultIsWatchedOnly() async {
+    let defaults = UserDefaults(suiteName: "default-scope-\(UUID().uuidString)")!
+    let failed = makeRun(id: 1, conclusion: "failure", updated: t0.addingTimeInterval(10))
+    let model = BoardModel(store: FakeRunSource([.success(snapshot([failed]))]), notifier: FakeNotifier(), defaults: defaults, now: { t0 })
+    #expect(model.notifyScope == .watched)
+    await model.refresh()
+    #expect(model.unseenFailures.isEmpty, "nothing is watched yet")
+    model.setNotifies(true, for: failed.repoFullName)
+    #expect(model.unseenFailures.map(\.id) == [1])
 }
