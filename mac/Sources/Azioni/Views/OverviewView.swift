@@ -67,6 +67,7 @@ private struct RepoCard: View {
     @Environment(BoardModel.self) private var model
     var repo: RepoSummary
     var showRepo: () -> Void
+    @State private var hovering = false
 
     var body: some View {
         let naming = model.repoNaming
@@ -94,18 +95,23 @@ private struct RepoCard: View {
                         .background(GitHubColor.pending.opacity(0.15), in: Capsule())
                 }
                 Spacer(minLength: 8)
-                RelativeTime(date: repo.lastChange, style: .short)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // Controls appear on hover. They stay in the layout (just transparent) so the
+                // header never changes height; a watched repo keeps its bell visible as a marker.
+                let watched = model.notifyScope == .watched && model.notifies(repo.fullName)
                 NotifyBell(repoFullName: repo.fullName)
+                    .opacity(hovering || watched ? 1 : 0)
                 Button {
                     if let url = RunFormat.repoActionsURL(repo.fullName) { NSWorkspace.shared.open(url) }
                 } label: {
                     Image(systemName: "arrow.up.forward.square")
+                        .frame(width: 16, height: 16)
                 }
                 .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
                 .help("Open \(repo.fullName) Actions on GitHub")
+                .opacity(hovering ? 1 : 0)
             }
+            .frame(height: 22)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .contextMenu { NotifyMenuToggle(repoFullName: repo.fullName) }
@@ -121,6 +127,8 @@ private struct RepoCard: View {
         }
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.separator))
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
     }
 }
 

@@ -55,8 +55,20 @@ struct ProjectsView: View {
                 .tag(SidebarItem.overview)
             Label("Recent activity", systemImage: "clock.arrow.circlepath")
                 .tag(SidebarItem.recent)
-            Section("Repositories") {
-                ForEach(repos) { repo in
+            // With "Watched repositories", the ones you watch get their own section on top.
+            let split = model.notifyScope == .watched
+            let watched = split ? repos.filter { model.notifies($0.fullName) } : []
+            let others = split ? repos.filter { !model.notifies($0.fullName) } : repos
+            if !watched.isEmpty {
+                Section("Watched") {
+                    ForEach(watched) { repo in
+                        RepoSidebarRow(repo: repo)
+                            .tag(SidebarItem.repo(repo.fullName))
+                    }
+                }
+            }
+            Section(watched.isEmpty ? "Repositories" : "Other") {
+                ForEach(others) { repo in
                     RepoSidebarRow(repo: repo)
                         .tag(SidebarItem.repo(repo.fullName))
                 }
@@ -120,12 +132,6 @@ private struct RepoSidebarRow: View {
                     .padding(.horizontal, 5)
                     .background(GitHubColor.pending.opacity(0.18), in: Capsule())
                     .help("\(live) running")
-            }
-            if model.notifyScope == .watched, model.notifies(repo.fullName) {
-                Image(systemName: "bell.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .help("Watching: notifies about failures")
             }
         }
         .help(repo.fullName)

@@ -16,7 +16,7 @@ struct NotifyBell: View {
                 // (and everything under it) from shifting when you toggle.
                 Image(systemName: on ? "bell.fill" : "bell.slash")
                     .frame(width: 16, height: 16)
-                    .foregroundStyle(on ? Color.accentColor : .secondary)
+                    .foregroundStyle(.secondary)
                     .accessibilityLabel(on ? "Watching" : "Not watching")
             }
             .buttonStyle(.borderless)
