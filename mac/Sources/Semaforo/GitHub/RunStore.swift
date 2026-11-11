@@ -1,6 +1,6 @@
 import Foundation
 
-/// Port of `server/runStore.ts`, same constants and tiering.
+/// Scans repos for workflow runs with tiered polling and ETags; see "How it stays within the rate limit" in the README.
 ///
 /// In-memory view of workflow runs. Concurrent `scan()` calls join one in-flight
 /// scan; each scan only asks GitHub about repos whose tier interval has elapsed.

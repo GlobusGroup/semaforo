@@ -7,7 +7,7 @@ struct GetResult<T: Sendable>: Sendable {
     var next: URL?
 }
 
-/// Port of `server/github.ts`.
+/// GitHub REST client.
 ///
 /// Borrows the token from the GitHub CLI once, then talks to the API directly so it
 /// can use ETags (304s are free) and read the rate-limit headers.
