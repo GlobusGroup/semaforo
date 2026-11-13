@@ -21,7 +21,7 @@ struct GitHubStatusIcon: View {
         case .failure:
             filled("xmark.circle.fill", GitHubColor.failure)
         case .running:
-            Spinner(color: GitHubColor.pending, lineWidth: size * 0.14)
+            Spinner(color: GitHubColor.nsPending, lineWidth: size * 0.14)
         case .queued:
             ZStack {
                 Circle().strokeBorder(GitHubColor.pending, lineWidth: size * 0.12)
@@ -45,23 +45,88 @@ struct GitHubStatusIcon: View {
 }
 
 /// GitHub's in-progress indicator: a ring with a darker arc that spins.
-private struct Spinner: View {
-    var color: Color
+///
+/// Drawn with Core Animation, not a SwiftUI `repeatForever` animation: that one re-renders the
+/// whole hosting view (and relayouts the table around it) on every display frame, which kept the
+/// app at ~25% CPU whenever a run was in progress. A layer rotation runs in the window server.
+private struct Spinner: NSViewRepresentable {
+    var color: NSColor
     var lineWidth: CGFloat
-    @State private var spinning = false
 
-    var body: some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.3), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: 0.3)
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(spinning ? 360 : 0))
+    func makeNSView(context: Context) -> SpinnerView { SpinnerView() }
+
+    func updateNSView(_ view: SpinnerView, context: Context) {
+        view.color = color
+        view.lineWidth = lineWidth
+    }
+}
+
+private final class SpinnerView: NSView {
+    var color: NSColor = .systemOrange { didSet { needsLayout = true } }
+    var lineWidth: CGFloat = 2 { didSet { needsLayout = true } }
+
+    private let track = CAShapeLayer()
+    private let arc = CAShapeLayer()
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        for shape in [track, arc] {
+            shape.fillColor = nil
+            shape.lineCap = .round
+            layer?.addSublayer(shape)
         }
-        .padding(lineWidth / 2)
-        .onAppear {
-            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) { spinning = true }
+        arc.strokeEnd = 0.3
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override var isFlipped: Bool { true }
+
+    override func layout() {
+        super.layout()
+        let inset = lineWidth
+        let rect = bounds.insetBy(dx: inset, dy: inset)
+        let path = CGPath(ellipseIn: rect, transform: nil)
+        for shape in [track, arc] {
+            shape.frame = bounds
+            shape.path = path
+            shape.lineWidth = lineWidth
         }
+        updateColors()
+        startSpinning()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsLayout = true
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        startSpinning()
+    }
+
+    private func updateColors() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            track.strokeColor = color.withAlphaComponent(0.3).cgColor
+            arc.strokeColor = color.cgColor
+        }
+    }
+
+    private func startSpinning() {
+        // Rotate about the centre, not the layer's default bottom-left anchor.
+        arc.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        arc.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        guard window != nil, arc.animation(forKey: "spin") == nil,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let spin = CABasicAnimation(keyPath: "transform.rotation.z")
+        spin.fromValue = 0
+        spin.toValue = -2 * Double.pi
+        spin.duration = 1
+        spin.repeatCount = .infinity
+        spin.isRemovedOnCompletion = false
+        arc.add(spin, forKey: "spin")
     }
 }
 

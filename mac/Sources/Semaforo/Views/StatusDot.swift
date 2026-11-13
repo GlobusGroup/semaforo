@@ -20,9 +20,7 @@ struct StatusDot: View {
     var body: some View {
         Group {
             if signal == .running {
-                PhaseAnimator([false, true]) { dim in
-                    dot.opacity(dim ? 0.35 : 1)
-                } animation: { _ in .easeInOut(duration: 0.9) }
+                PulsingDot(color: GitHubColor.nsPending)
             } else {
                 dot
             }
@@ -45,5 +43,59 @@ struct StatusLabel: View {
             StatusDot(signal: signal)
             Text(signal.label)
         }
+    }
+}
+
+/// The running dot's pulse, done with Core Animation. A SwiftUI `PhaseAnimator` here re-rendered
+/// the whole sidebar on every display frame while anything was running (constant CPU use).
+private struct PulsingDot: NSViewRepresentable {
+    var color: NSColor
+
+    func makeNSView(context: Context) -> PulsingDotView { PulsingDotView() }
+    func updateNSView(_ view: PulsingDotView, context: Context) { view.color = color }
+}
+
+private final class PulsingDotView: NSView {
+    var color: NSColor = .systemOrange { didSet { needsLayout = true } }
+    private let dot = CAShapeLayer()
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layer?.addSublayer(dot)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    override func layout() {
+        super.layout()
+        dot.frame = bounds
+        dot.path = CGPath(ellipseIn: bounds, transform: nil)
+        effectiveAppearance.performAsCurrentDrawingAppearance { dot.fillColor = color.cgColor }
+        startPulsing()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsLayout = true
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        startPulsing()
+    }
+
+    private func startPulsing() {
+        guard window != nil, dot.animation(forKey: "pulse") == nil,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let pulse = CABasicAnimation(keyPath: "opacity")
+        pulse.fromValue = 1
+        pulse.toValue = 0.35
+        pulse.duration = 0.9
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        pulse.isRemovedOnCompletion = false
+        dot.add(pulse, forKey: "pulse")
     }
 }
